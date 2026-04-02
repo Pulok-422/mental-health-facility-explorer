@@ -6,14 +6,13 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet.heat';
 import type { DistrictPop, Facility, Filters, ChoroplethMetric, BubbleMetric } from '@/types/dashboard';
-import MapControls, { getMetricPalette } from './MapControls';
 import DistrictInfoCard from './DistrictInfoCard';
 
 const BANGLADESH_CENTER: [number, number] = [23.7, 90.35];
 const BANGLADESH_ZOOM = 7.5;
 const BANGLADESH_BOUNDS: L.LatLngBoundsExpression = [[20.5, 88.0], [26.7, 92.7]];
 
-const TILE_LAYERS: Record<string, string> = {
+const TILE_LAYERS: Record<'light' | 'street' | 'satellite', string> = {
   light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
   street: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
   satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -41,6 +40,7 @@ function getMetricValue(district: DistrictPop, metric: ChoroplethMetric | Bubble
 }
 
 function quantileBreaks(values: number[], n: number): number[] {
+  if (!values.length) return [];
   const sorted = [...values].sort((a, b) => a - b);
   const breaks: number[] = [];
   for (let i = 1; i < n; i++) {
@@ -51,6 +51,7 @@ function quantileBreaks(values: number[], n: number): number[] {
 }
 
 function getQuantileColor(value: number, breaks: number[], palette: string[]): string {
+  if (!palette.length) return '#cbd5e1';
   for (let i = 0; i < breaks.length; i++) {
     if (value <= breaks[i]) return palette[i];
   }
@@ -140,7 +141,12 @@ export default function DistrictMap({
   const breaks = useMemo(() => quantileBreaks(metricValues, 5), [metricValues]);
 
   const palette = useMemo(
-    () => getMetricPalette(filters.choroplethMetric),
+    () => {
+      const p = (typeof window !== 'undefined' && (window as any).getMetricPalette)
+        ? (window as any).getMetricPalette(filters.choroplethMetric)
+        : null;
+      return p || ['#dbeafe', '#93c5fd', '#60a5fa', '#3b82f6', '#1d4ed8'];
+    },
     [filters.choroplethMetric]
   );
 
@@ -260,6 +266,177 @@ export default function DistrictMap({
       .mental-health-facility-marker:hover {
         transform: scale(1.12);
       }
+
+      .map-segmented-control {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        z-index: 1000;
+        display: inline-flex;
+        gap: 4px;
+        padding: 4px;
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
+      }
+
+      .map-segmented-btn {
+        border: 0;
+        border-radius: 10px;
+        padding: 8px 12px;
+        background: transparent;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1;
+        cursor: pointer;
+        transition: all 0.16s ease;
+      }
+
+      .map-segmented-btn:hover {
+        background: rgba(59, 130, 246, 0.08);
+        color: #2563eb;
+      }
+
+      .map-segmented-btn.active {
+        background: #2b7de9;
+        color: #ffffff;
+        box-shadow: 0 2px 8px rgba(43, 125, 233, 0.28);
+      }
+
+      .map-legend-panel {
+        position: absolute;
+        left: 12px;
+        bottom: 12px;
+        z-index: 1000;
+        min-width: 220px;
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
+        padding: 10px 12px;
+      }
+
+      .map-legend-title {
+        margin: 0 0 8px 0;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        color: #64748b;
+        text-transform: uppercase;
+      }
+
+      .map-legend-scale {
+        height: 14px;
+        border-radius: 9999px;
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        border: 1px solid rgba(226, 232, 240, 0.95);
+      }
+
+      .map-legend-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 8px;
+        font-size: 11px;
+        color: #64748b;
+      }
+
+      .map-legend-breaks {
+        margin-top: 6px;
+        font-size: 11px;
+        color: #64748b;
+      }
+
+      .map-action-stack {
+        position: absolute;
+        right: 12px;
+        top: 12px;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .map-action-btn {
+        width: 38px;
+        height: 38px;
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.96);
+        color: #334155;
+        font-size: 18px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
+        backdrop-filter: blur(10px);
+        transition: all 0.16s ease;
+      }
+
+      .map-action-btn:hover {
+        background: #f8fafc;
+        color: #111827;
+      }
+
+      .map-toggle-stack {
+        position: absolute;
+        right: 12px;
+        bottom: 84px;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .map-mini-toggle {
+        padding: 8px 12px;
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        border-radius: 12px;
+        background: rgba(255,255,255,0.96);
+        color: #334155;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
+        backdrop-filter: blur(10px);
+      }
+
+      .map-mini-toggle.active {
+        background: #2b7de9;
+        color: #ffffff;
+        border-color: #2b7de9;
+      }
+
+      @media (max-width: 768px) {
+        .map-segmented-control {
+          top: 10px;
+          left: 10px;
+          right: 72px;
+          overflow-x: auto;
+          white-space: nowrap;
+        }
+
+        .map-legend-panel {
+          left: 10px;
+          bottom: 10px;
+          max-width: calc(100% - 20px);
+          min-width: 0;
+        }
+
+        .map-action-stack {
+          top: 10px;
+          right: 10px;
+        }
+
+        .map-toggle-stack {
+          right: 10px;
+          bottom: 92px;
+        }
+      }
     `;
     document.head.appendChild(style);
 
@@ -300,7 +477,7 @@ export default function DistrictMap({
     if (tileRef.current) mapRef.current.removeLayer(tileRef.current);
 
     tileRef.current = L.tileLayer(TILE_LAYERS[basemap], {
-      attribution: '© OpenStreetMap',
+      attribution: basemap === 'satellite' ? '© Esri' : '© OpenStreetMap',
     }).addTo(mapRef.current);
   }, [basemap]);
 
@@ -689,21 +866,84 @@ export default function DistrictMap({
       className="map-container relative"
       style={{ height: isFullscreen ? '100vh' : '560px' }}
     >
-      <MapControls
-        filters={filters}
-        updateFilter={updateFilter}
-        basemap={basemap}
-        setBasemap={setBasemap}
-        onResetView={handleResetView}
-        onFitBangladesh={handleFitBangladesh}
-        onFitSelected={handleFitSelected}
-        onLocateUser={handleLocateUser}
-        onToggleFullscreen={handleToggleFullscreen}
-        isFullscreen={isFullscreen}
-        hasSelection={!!selectedDistrict}
-        metricRange={metricRange}
-        getQuantileBreaks={() => breaks}
-      />
+      <div className="map-segmented-control">
+        <button
+          type="button"
+          className={`map-segmented-btn ${basemap === 'light' ? 'active' : ''}`}
+          onClick={() => setBasemap('light')}
+        >
+          Light
+        </button>
+        <button
+          type="button"
+          className={`map-segmented-btn ${basemap === 'street' ? 'active' : ''}`}
+          onClick={() => setBasemap('street')}
+        >
+          Street
+        </button>
+        <button
+          type="button"
+          className={`map-segmented-btn ${basemap === 'satellite' ? 'active' : ''}`}
+          onClick={() => setBasemap('satellite')}
+        >
+          Satellite
+        </button>
+      </div>
+
+      <div className="map-action-stack">
+        <button type="button" className="map-action-btn" onClick={handleLocateUser} title="Locate me">
+          ⌖
+        </button>
+        <button type="button" className="map-action-btn" onClick={handleFitBangladesh} title="Fit Bangladesh">
+          ⛶
+        </button>
+        {selectedDistrict && (
+          <button type="button" className="map-action-btn" onClick={handleFitSelected} title="Fit selected district">
+            ◎
+          </button>
+        )}
+        <button type="button" className="map-action-btn" onClick={handleResetView} title="Reset view">
+          ↺
+        </button>
+        <button type="button" className="map-action-btn" onClick={handleToggleFullscreen} title="Fullscreen">
+          {isFullscreen ? '🗗' : '🗖'}
+        </button>
+      </div>
+
+      <div className="map-toggle-stack">
+        <button
+          type="button"
+          className={`map-mini-toggle ${filters.showMarkers ? 'active' : ''}`}
+          onClick={() => updateFilter('showMarkers', !filters.showMarkers)}
+        >
+          Markers
+        </button>
+        <button
+          type="button"
+          className={`map-mini-toggle ${filters.showHeatmap ? 'active' : ''}`}
+          onClick={() => updateFilter('showHeatmap', !filters.showHeatmap)}
+        >
+          Heatmap
+        </button>
+      </div>
+
+      {filters.showChoropleth && (
+        <div className="map-legend-panel">
+          <div className="map-legend-title">Legend</div>
+          <div className="map-legend-scale">
+            {palette.slice(0, 5).map((color, idx) => (
+              <div key={idx} style={{ background: color }} />
+            ))}
+          </div>
+          <div className="map-legend-labels">
+            <span>Low ({metricRange.min.toLocaleString()})</span>
+            <span>High ({metricRange.max.toLocaleString()})</span>
+          </div>
+          <div className="map-legend-breaks">
+            Breaks: {breaks.map((b) => Number.isFinite(b) ? b.toLocaleString() : b).join(' · ')}
+          </div>
+        </div>
+      )}
 
       {selectedDistrictData && (
         <DistrictInfoCard district={selectedDistrictData} onClose={() => onDistrictClick(null)} />
