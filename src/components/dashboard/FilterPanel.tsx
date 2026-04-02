@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import type { Filters } from '@/types/dashboard';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, RotateCcw, MapPin, Layers, Eye, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, RotateCcw, MapPin, Layers, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface FilterPanelProps {
@@ -76,7 +75,7 @@ export default function FilterPanel({
     <div className="h-full overflow-y-auto p-4 space-y-0">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-          <Layers className="h-4 w-4 text-primary" /> Filters
+          <Layers className="h-4 w-4 text-primary" /> Data Filters
         </h2>
         <Button variant="ghost" size="sm" onClick={resetFilters} className="h-7 text-xs text-muted-foreground">
           <RotateCcw className="h-3 w-3 mr-1" /> Reset
@@ -136,74 +135,28 @@ export default function FilterPanel({
         ))}
       </CollapsibleSection>
 
-      {/* Facility Type */}
       <CollapsibleSection title="Facility Type">
         <CheckboxFilter options={filterOptions.facilityTypes} selected={filters.facilityTypes} onChange={v => updateFilter('facilityTypes', v)} />
       </CollapsibleSection>
 
-      {/* Ownership */}
       <CollapsibleSection title="Ownership">
         <CheckboxFilter options={filterOptions.ownership} selected={filters.ownership} onChange={v => updateFilter('ownership', v)} />
       </CollapsibleSection>
 
-      {/* Origin */}
       <CollapsibleSection title="Origin">
         <CheckboxFilter options={filterOptions.origin} selected={filters.origin} onChange={v => updateFilter('origin', v)} />
       </CollapsibleSection>
 
-      {/* Category */}
       <CollapsibleSection title="Category">
         <CheckboxFilter options={filterOptions.category} selected={filters.category} onChange={v => updateFilter('category', v)} />
       </CollapsibleSection>
 
-      {/* Appointment */}
       <CollapsibleSection title="Appointment">
         <CheckboxFilter options={filterOptions.appointmentRequired} selected={filters.appointmentRequired} onChange={v => updateFilter('appointmentRequired', v)} />
       </CollapsibleSection>
 
-      {/* Cost */}
       <CollapsibleSection title="Cost">
         <CheckboxFilter options={filterOptions.cost} selected={filters.cost} onChange={v => updateFilter('cost', v)} />
-      </CollapsibleSection>
-
-      {/* Map Display */}
-      <CollapsibleSection title="Map Display" icon={<Eye className="h-3 w-3" />} defaultOpen={true}>
-        <div className="space-y-2.5 px-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-foreground">Choropleth</span>
-            <Switch checked={filters.showChoropleth} onCheckedChange={v => updateFilter('showChoropleth', v)} />
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-foreground">Facility Markers</span>
-            <Switch checked={filters.showMarkers} onCheckedChange={v => updateFilter('showMarkers', v)} />
-          </div>
-        </div>
-
-        {filters.showChoropleth && (
-          <div className="mt-2 px-1">
-            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Choropleth Metric</span>
-            <div className="mt-1 space-y-0.5">
-              {[
-                { key: 'facilities', label: 'Total Facilities' },
-                { key: 'population', label: 'Population' },
-                { key: 'facilitiesPer100k', label: 'Facilities per 100K' },
-                { key: 'povertyIndex', label: 'Poverty Index' },
-                { key: 'literacyRate', label: 'Literacy Rate' },
-              ].map(m => (
-                <label key={m.key} className="flex items-center gap-2 py-0.5 cursor-pointer text-xs text-foreground">
-                  <input
-                    type="radio"
-                    name="choropleth"
-                    checked={filters.choroplethMetric === m.key}
-                    onChange={() => updateFilter('choroplethMetric', m.key as any)}
-                    className="h-3 w-3 text-primary accent-[hsl(210,80%,50%)]"
-                  />
-                  <span>{m.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        )}
       </CollapsibleSection>
     </div>
   );

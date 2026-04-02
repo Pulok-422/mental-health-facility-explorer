@@ -14,7 +14,6 @@ export interface DistrictPop {
   Average_household_size: number;
   Literacy_rate: number;
   "Poverty Index": number;
-  // Derived
   facilitiesPer100k?: number;
   populationPerFacility?: number;
   householdsPerFacility?: number;
@@ -61,9 +60,12 @@ export interface Filters {
   facilitiesRange: [number, number];
   showChoropleth: boolean;
   showMarkers: boolean;
+  showHeatmap: boolean;
+  showBubbles: boolean;
   showLabels: boolean;
   normalizeByPop: boolean;
   choroplethMetric: ChoroplethMetric;
+  bubbleMetric: BubbleMetric;
 }
 
 export type ChoroplethMetric = 
@@ -72,6 +74,9 @@ export type ChoroplethMetric =
   | 'facilitiesPer100k' 
   | 'populationPerFacility' 
   | 'povertyIndex' 
-  | 'literacyRate';
+  | 'literacyRate'
+  | 'urbanPercent';
+
+export type BubbleMetric = 'facilities' | 'population' | 'facilitiesPer100k';
 
 export type TabView = 'map' | 'insights' | 'table' | 'compare';

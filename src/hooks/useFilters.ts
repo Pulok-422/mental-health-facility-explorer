@@ -18,9 +18,12 @@ const DEFAULT_FILTERS: Filters = {
   facilitiesRange: [0, 200],
   showChoropleth: true,
   showMarkers: true,
+  showHeatmap: false,
+  showBubbles: false,
   showLabels: false,
   normalizeByPop: false,
   choroplethMetric: 'facilities',
+  bubbleMetric: 'facilities',
 };
 
 export function useFilters(allDistricts: DistrictPop[], allFacilities: Facility[]) {
@@ -80,13 +83,8 @@ export function useFilters(allDistricts: DistrictPop[], allFacilities: Facility[
   }, [allDistricts, allFacilities]);
 
   return {
-    filters,
-    updateFilter,
-    resetFilters,
-    selectedDistrict,
-    setSelectedDistrict,
-    activeDistricts,
-    activeFacilities,
-    filterOptions,
+    filters, updateFilter, resetFilters,
+    selectedDistrict, setSelectedDistrict,
+    activeDistricts, activeFacilities, filterOptions,
   };
 }
