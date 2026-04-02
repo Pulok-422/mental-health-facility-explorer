@@ -10,7 +10,7 @@ export default function CompareTab({ districts }: Props) {
   const [distA, setDistA] = useState<string>('');
   const [distB, setDistB] = useState<string>('');
 
-  const sorted = useMemo(() => [...districts].sort((a, b) => a.DIS_NAME.localeCompare(b.DIS_NAME)), [districts]);
+  const sorted = useMemo(() => [...districts].filter(d => d.DIS_NAME).sort((a, b) => (a.DIS_NAME || '').localeCompare(b.DIS_NAME || '')), [districts]);
 
   const national = useMemo(() => {
     if (districts.length === 0) return null;
