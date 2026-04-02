@@ -1,16 +1,132 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import { useDataLoader } from '@/hooks/useDataLoader';
+import { useFilters } from '@/hooks/useFilters';
+import type { TabView } from '@/types/dashboard';
+import KPICards from '@/components/dashboard/KPICards';
+import DistrictMap from '@/components/dashboard/DistrictMap';
+import FilterPanel from '@/components/dashboard/FilterPanel';
+import InsightsTab from '@/components/dashboard/InsightsTab';
+import DataTable from '@/components/dashboard/DataTable';
+import DistrictSummaryCards from '@/components/dashboard/DistrictSummaryCards';
+import CompareTab from '@/components/dashboard/CompareTab';
+import { Map, BarChart3, Table2, GitCompare, Activity, Menu, X } from 'lucide-react';
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+export default function Index() {
+  const { districts, facilities, geojson, loading } = useDataLoader();
+  const {
+    filters, updateFilter, resetFilters,
+    selectedDistrict, setSelectedDistrict,
+    activeDistricts, activeFacilities, filterOptions,
+  } = useFilters(districts, facilities);
+  const [activeTab, setActiveTab] = useState<TabView>('map');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center animate-fade-in">
+          <Activity className="h-8 w-8 text-primary animate-pulse mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const tabs = [
+    { key: 'map' as const, label: 'Map Explorer', icon: Map },
+    { key: 'insights' as const, label: 'Insights', icon: BarChart3 },
+    { key: 'table' as const, label: 'Data Table', icon: Table2 },
+    { key: 'compare' as const, label: 'Compare', icon: GitCompare },
+  ];
+
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
+    <div className="min-h-screen bg-background flex">
+      {/* Sidebar */}
+      <aside
+        className={`bg-card border-r border-border transition-all duration-300 flex-shrink-0 ${
+          sidebarOpen ? 'w-72' : 'w-0 overflow-hidden'
+        }`}
+      >
+        <div className="h-screen sticky top-0 overflow-hidden">
+          <FilterPanel
+            filters={filters}
+            updateFilter={updateFilter}
+            resetFilters={resetFilters}
+            filterOptions={filterOptions}
+            selectedDistrict={selectedDistrict}
+            setSelectedDistrict={setSelectedDistrict}
+          />
+        </div>
+      </aside>
+
+      {/* Main */}
+      <main className="flex-1 min-w-0">
+        {/* Header */}
+        <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+                {sidebarOpen ? <X className="h-4 w-4 text-muted-foreground" /> : <Menu className="h-4 w-4 text-muted-foreground" />}
+              </button>
+              <div>
+                <h1 className="text-base font-bold text-foreground">Mental Health Facility Explorer</h1>
+                <p className="text-xs text-muted-foreground">District-wise dashboard for Bangladesh</p>
+              </div>
+            </div>
+            <div className="flex gap-1 bg-secondary rounded-lg p-0.5">
+              {tabs.map(t => (
+                <button
+                  key={t.key}
+                  onClick={() => setActiveTab(t.key)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    activeTab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  <t.icon className="h-3.5 w-3.5" /> {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </header>
+
+        <div className="p-4 space-y-4">
+          {/* KPIs */}
+          <KPICards districts={activeDistricts} facilities={activeFacilities} />
+
+          {/* District Summary */}
+          <DistrictSummaryCards districts={activeDistricts} />
+
+          {/* Tab Content */}
+          {activeTab === 'map' && (
+            <>
+              <DistrictMap
+                geojson={geojson}
+                districts={activeDistricts}
+                facilities={activeFacilities}
+                filters={filters}
+                selectedDistrict={selectedDistrict}
+                onDistrictClick={setSelectedDistrict}
+              />
+              <DataTable
+                districts={activeDistricts}
+                facilities={activeFacilities}
+              />
+            </>
+          )}
+
+          {activeTab === 'insights' && (
+            <InsightsTab districts={activeDistricts} facilities={activeFacilities} />
+          )}
+
+          {activeTab === 'table' && (
+            <DataTable districts={activeDistricts} facilities={activeFacilities} />
+          )}
+
+          {activeTab === 'compare' && (
+            <CompareTab districts={activeDistricts} />
+          )}
+        </div>
+      </main>
     </div>
   );
-};
-
-const Index = PlaceholderIndex;
-
-export default Index;
+}
