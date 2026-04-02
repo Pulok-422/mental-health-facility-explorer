@@ -1,7 +1,9 @@
-import type { Filters, DistrictPop, Facility } from '@/types/dashboard';
+import { useState } from 'react';
+import type { Filters } from '@/types/dashboard';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Search, RotateCcw, MapPin, Layers, Eye } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Search, RotateCcw, MapPin, Layers, Eye, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface FilterPanelProps {
@@ -22,36 +24,56 @@ interface FilterPanelProps {
   setSelectedDistrict: (code: string | null) => void;
 }
 
-function MultiSelect({
-  label, options, selected, onChange,
-}: { label: string; options: string[]; selected: string[]; onChange: (v: string[]) => void }) {
+function CollapsibleSection({
+  title, icon, children, defaultOpen = false,
+}: { title: string; icon?: React.ReactNode; children: React.ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="filter-section">
-      <div className="filter-label">{label}</div>
-      <div className="flex flex-wrap gap-1 mt-1.5 max-h-28 overflow-y-auto">
-        {options.map(opt => (
-          <button
-            key={opt}
-            onClick={() => onChange(selected.includes(opt) ? selected.filter(s => s !== opt) : [...selected, opt])}
-            className={`px-2 py-0.5 text-xs rounded-full transition-colors border ${
-              selected.includes(opt)
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-secondary text-secondary-foreground border-border hover:bg-muted'
-            }`}
-          >
-            {opt}
-          </button>
-        ))}
-      </div>
+    <div className="border-b border-border pb-2 mb-2">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+      >
+        <span className="flex items-center gap-1.5">{icon}{title}</span>
+        {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+      </button>
+      {open && <div className="mt-1.5 space-y-1 max-h-40 overflow-y-auto">{children}</div>}
     </div>
+  );
+}
+
+function CheckboxFilter({
+  options, selected, onChange,
+}: { options: string[]; selected: string[]; onChange: (v: string[]) => void }) {
+  return (
+    <>
+      {options.map(opt => (
+        <label key={opt} className="flex items-center gap-2 py-0.5 px-1 rounded hover:bg-muted/50 cursor-pointer text-xs text-foreground">
+          <Checkbox
+            checked={selected.includes(opt)}
+            onCheckedChange={(checked) => {
+              onChange(checked ? [...selected, opt] : selected.filter(s => s !== opt));
+            }}
+            className="h-3.5 w-3.5"
+          />
+          <span className="truncate">{opt}</span>
+        </label>
+      ))}
+    </>
   );
 }
 
 export default function FilterPanel({
   filters, updateFilter, resetFilters, filterOptions, selectedDistrict, setSelectedDistrict,
 }: FilterPanelProps) {
+  const [districtSearch, setDistrictSearch] = useState('');
+
+  const filteredDistricts = filterOptions.districts.filter(d =>
+    d.name.toLowerCase().includes(districtSearch.toLowerCase())
+  );
+
   return (
-    <div className="h-full overflow-y-auto p-4 space-y-1">
+    <div className="h-full overflow-y-auto p-4 space-y-0">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
           <Layers className="h-4 w-4 text-primary" /> Filters
@@ -62,12 +84,11 @@ export default function FilterPanel({
       </div>
 
       {/* Search */}
-      <div className="filter-section">
-        <div className="filter-label">Search Facility</div>
-        <div className="relative mt-1.5">
+      <div className="border-b border-border pb-2 mb-2">
+        <div className="relative">
           <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
-            placeholder="Search by name..."
+            placeholder="Search facility name..."
             value={filters.searchQuery}
             onChange={e => updateFilter('searchQuery', e.target.value)}
             className="h-8 pl-8 text-xs bg-secondary border-0"
@@ -75,50 +96,79 @@ export default function FilterPanel({
         </div>
       </div>
 
-      {/* District */}
-      <div className="filter-section">
-        <div className="filter-label flex items-center gap-1"><MapPin className="h-3 w-3" /> District</div>
-        <div className="flex flex-wrap gap-1 mt-1.5 max-h-32 overflow-y-auto">
-          {selectedDistrict && (
+      {/* Selected district badge */}
+      {selectedDistrict && (
+        <div className="border-b border-border pb-2 mb-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Selected District</span>
             <button
               onClick={() => setSelectedDistrict(null)}
-              className="px-2 py-0.5 text-xs rounded-full bg-primary text-primary-foreground border border-primary flex items-center gap-1"
+              className="px-2 py-0.5 text-xs rounded-full bg-primary text-primary-foreground flex items-center gap-1"
             >
               {filterOptions.districts.find(d => d.code === selectedDistrict)?.name} ×
             </button>
-          )}
-          {!selectedDistrict && filterOptions.districts.map(d => (
-            <button
-              key={d.code}
-              onClick={() => {
-                const newDists = filters.districts.includes(d.code)
-                  ? filters.districts.filter(c => c !== d.code)
-                  : [...filters.districts, d.code];
+          </div>
+        </div>
+      )}
+
+      {/* District */}
+      <CollapsibleSection title="District" icon={<MapPin className="h-3 w-3" />}>
+        <Input
+          placeholder="Filter districts..."
+          value={districtSearch}
+          onChange={e => setDistrictSearch(e.target.value)}
+          className="h-7 text-xs bg-secondary border-0 mb-1.5"
+        />
+        {filteredDistricts.map(d => (
+          <label key={d.code} className="flex items-center gap-2 py-0.5 px-1 rounded hover:bg-muted/50 cursor-pointer text-xs text-foreground">
+            <Checkbox
+              checked={filters.districts.includes(d.code)}
+              onCheckedChange={(checked) => {
+                const newDists = checked
+                  ? [...filters.districts, d.code]
+                  : filters.districts.filter(c => c !== d.code);
                 updateFilter('districts', newDists);
               }}
-              className={`px-2 py-0.5 text-xs rounded-full transition-colors border ${
-                filters.districts.includes(d.code)
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-secondary text-secondary-foreground border-border hover:bg-muted'
-              }`}
-            >
-              {d.name}
-            </button>
-          ))}
-        </div>
-      </div>
+              className="h-3.5 w-3.5"
+            />
+            <span className="truncate">{d.name}</span>
+          </label>
+        ))}
+      </CollapsibleSection>
 
-      <MultiSelect label="Facility Type" options={filterOptions.facilityTypes} selected={filters.facilityTypes} onChange={v => updateFilter('facilityTypes', v)} />
-      <MultiSelect label="Ownership" options={filterOptions.ownership} selected={filters.ownership} onChange={v => updateFilter('ownership', v)} />
-      <MultiSelect label="Origin" options={filterOptions.origin} selected={filters.origin} onChange={v => updateFilter('origin', v)} />
-      <MultiSelect label="Category" options={filterOptions.category} selected={filters.category} onChange={v => updateFilter('category', v)} />
-      <MultiSelect label="Appointment" options={filterOptions.appointmentRequired} selected={filters.appointmentRequired} onChange={v => updateFilter('appointmentRequired', v)} />
-      <MultiSelect label="Cost" options={filterOptions.cost} selected={filters.cost} onChange={v => updateFilter('cost', v)} />
+      {/* Facility Type */}
+      <CollapsibleSection title="Facility Type">
+        <CheckboxFilter options={filterOptions.facilityTypes} selected={filters.facilityTypes} onChange={v => updateFilter('facilityTypes', v)} />
+      </CollapsibleSection>
 
-      {/* Map Toggles */}
-      <div className="filter-section">
-        <div className="filter-label flex items-center gap-1"><Eye className="h-3 w-3" /> Map Display</div>
-        <div className="space-y-2 mt-2">
+      {/* Ownership */}
+      <CollapsibleSection title="Ownership">
+        <CheckboxFilter options={filterOptions.ownership} selected={filters.ownership} onChange={v => updateFilter('ownership', v)} />
+      </CollapsibleSection>
+
+      {/* Origin */}
+      <CollapsibleSection title="Origin">
+        <CheckboxFilter options={filterOptions.origin} selected={filters.origin} onChange={v => updateFilter('origin', v)} />
+      </CollapsibleSection>
+
+      {/* Category */}
+      <CollapsibleSection title="Category">
+        <CheckboxFilter options={filterOptions.category} selected={filters.category} onChange={v => updateFilter('category', v)} />
+      </CollapsibleSection>
+
+      {/* Appointment */}
+      <CollapsibleSection title="Appointment">
+        <CheckboxFilter options={filterOptions.appointmentRequired} selected={filters.appointmentRequired} onChange={v => updateFilter('appointmentRequired', v)} />
+      </CollapsibleSection>
+
+      {/* Cost */}
+      <CollapsibleSection title="Cost">
+        <CheckboxFilter options={filterOptions.cost} selected={filters.cost} onChange={v => updateFilter('cost', v)} />
+      </CollapsibleSection>
+
+      {/* Map Display */}
+      <CollapsibleSection title="Map Display" icon={<Eye className="h-3 w-3" />} defaultOpen={true}>
+        <div className="space-y-2.5 px-1">
           <div className="flex items-center justify-between">
             <span className="text-xs text-foreground">Choropleth</span>
             <Switch checked={filters.showChoropleth} onCheckedChange={v => updateFilter('showChoropleth', v)} />
@@ -128,35 +178,33 @@ export default function FilterPanel({
             <Switch checked={filters.showMarkers} onCheckedChange={v => updateFilter('showMarkers', v)} />
           </div>
         </div>
-      </div>
 
-      {/* Choropleth metric */}
-      {filters.showChoropleth && (
-        <div className="filter-section">
-          <div className="filter-label">Choropleth Metric</div>
-          <div className="flex flex-wrap gap-1 mt-1.5">
-            {[
-              { key: 'facilities', label: 'Facilities' },
-              { key: 'population', label: 'Population' },
-              { key: 'facilitiesPer100k', label: 'Per 100K' },
-              { key: 'povertyIndex', label: 'Poverty' },
-              { key: 'literacyRate', label: 'Literacy' },
-            ].map(m => (
-              <button
-                key={m.key}
-                onClick={() => updateFilter('choroplethMetric', m.key as any)}
-                className={`px-2 py-0.5 text-xs rounded-full transition-colors border ${
-                  filters.choroplethMetric === m.key
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-secondary text-secondary-foreground border-border hover:bg-muted'
-                }`}
-              >
-                {m.label}
-              </button>
-            ))}
+        {filters.showChoropleth && (
+          <div className="mt-2 px-1">
+            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Choropleth Metric</span>
+            <div className="mt-1 space-y-0.5">
+              {[
+                { key: 'facilities', label: 'Total Facilities' },
+                { key: 'population', label: 'Population' },
+                { key: 'facilitiesPer100k', label: 'Facilities per 100K' },
+                { key: 'povertyIndex', label: 'Poverty Index' },
+                { key: 'literacyRate', label: 'Literacy Rate' },
+              ].map(m => (
+                <label key={m.key} className="flex items-center gap-2 py-0.5 cursor-pointer text-xs text-foreground">
+                  <input
+                    type="radio"
+                    name="choropleth"
+                    checked={filters.choroplethMetric === m.key}
+                    onChange={() => updateFilter('choroplethMetric', m.key as any)}
+                    className="h-3 w-3 text-primary accent-[hsl(210,80%,50%)]"
+                  />
+                  <span>{m.label}</span>
+                </label>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </CollapsibleSection>
     </div>
   );
 }
