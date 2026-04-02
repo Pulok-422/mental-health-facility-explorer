@@ -370,15 +370,32 @@ export default function DistrictMap({
         const { latitude, longitude } = pos.coords;
         const map = mapRef.current;
         if (!map) return;
-        if (userMarkerRef.current) map.removeLayer(userMarkerRef.current);
-        userMarkerRef.current = L.marker([latitude, longitude], {
-          icon: L.divIcon({
-            className: '',
-            html: `<div style="width:16px;height:16px;background:hsl(210,90%,55%);border:3px solid white;border-radius:50%;box-shadow:0 0 0 4px hsla(210,90%,55%,0.3),0 2px 8px rgba(0,0,0,0.3);animation:pulse 2s infinite"></div>`,
-            iconSize: [16, 16],
-            iconAnchor: [8, 8],
-          }),
-        }).addTo(map).bindPopup('You are here').openPopup();
+        if (userMarkerRef.current = L.marker([latitude, longitude], {
+  icon: L.divIcon({
+    className: '',
+    html: `
+      <div style="position: relative; width:18px; height:18px;">
+        <span style="
+          position:absolute;
+          inset:0;
+          border-radius:9999px;
+          background:rgba(220, 38, 38, 0.35);
+          animation:userPulse 1.8s ease-out infinite;
+        "></span>
+        <span style="
+          position:absolute;
+          inset:3px;
+          border-radius:9999px;
+          background:#dc2626;
+          border:3px solid white;
+          box-shadow:0 2px 8px rgba(0,0,0,0.35);
+        "></span>
+      </div>
+    `,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+  }),
+}).addTo(map).bindPopup('You are here').openPopup();
         map.setView([latitude, longitude], 10);
       },
       () => {
