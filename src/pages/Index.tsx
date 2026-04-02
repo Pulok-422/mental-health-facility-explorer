@@ -104,6 +104,7 @@ export default function Index() {
                 districts={activeDistricts}
                 facilities={activeFacilities}
                 filters={filters}
+                updateFilter={updateFilter}
                 selectedDistrict={selectedDistrict}
                 onDistrictClick={setSelectedDistrict}
               />
