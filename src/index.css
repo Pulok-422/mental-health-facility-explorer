@@ -191,3 +191,8 @@
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(210, 20%, 75%);
 }
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 4px hsla(210,90%,55%,0.3), 0 2px 8px rgba(0,0,0,0.3); }
+  50% { box-shadow: 0 0 0 10px hsla(210,90%,55%,0), 0 2px 8px rgba(0,0,0,0.3); }
+}
