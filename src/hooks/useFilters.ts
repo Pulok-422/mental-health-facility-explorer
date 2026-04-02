@@ -68,7 +68,7 @@ export function useFilters(allDistricts: DistrictPop[], allFacilities: Facility[
   const filterOptions = useMemo(() => {
     const unique = <T,>(arr: T[]) => [...new Set(arr)].filter(Boolean).sort() as string[];
     return {
-      districts: allDistricts.map(d => ({ code: d.DIS_CODE, name: d.DIS_NAME })).sort((a, b) => a.name.localeCompare(b.name)),
+      districts: allDistricts.filter(d => d.DIS_NAME).map(d => ({ code: d.DIS_CODE, name: d.DIS_NAME })).sort((a, b) => (a.name || '').localeCompare(b.name || '')),
       facilityTypes: unique(allFacilities.map(f => f.facility_type)),
       ownership: unique(allFacilities.map(f => f.ownership)),
       origin: unique(allFacilities.map(f => f.origin)),
