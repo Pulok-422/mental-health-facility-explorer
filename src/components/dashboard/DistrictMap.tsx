@@ -1,6 +1,9 @@
 import { useEffect, useRef, useMemo, useState } from 'react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import type { DistrictPop, Facility, Filters, ChoroplethMetric } from '@/types/dashboard';
 
 const BANGLADESH_CENTER: [number, number] = [23.8, 90.4];
