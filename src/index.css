@@ -2,95 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+@import "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 215 25% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 215 25% 15%;
+    --primary: 210 80% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 30% 94%;
+    --secondary-foreground: 215 25% 25%;
+    --muted: 210 20% 95%;
+    --muted-foreground: 215 15% 50%;
+    --accent: 200 75% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 20% 90%;
+    --input: 210 20% 90%;
+    --ring: 210 80% 50%;
+    --radius: 0.75rem;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 25% 25%;
+    --sidebar-primary: 210 80% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 210 30% 94%;
+    --sidebar-accent-foreground: 215 25% 25%;
+    --sidebar-border: 210 20% 92%;
+    --sidebar-ring: 210 80% 50%;
+
+    --kpi-gradient: linear-gradient(135deg, hsl(210, 80%, 50%), hsl(200, 75%, 45%));
+    --map-shadow: 0 4px 20px -4px hsl(210 80% 50% / 0.15);
+    --card-shadow: 0 1px 3px 0 hsl(215 25% 15% / 0.06), 0 1px 2px -1px hsl(215 25% 15% / 0.06);
+    --card-shadow-hover: 0 4px 12px 0 hsl(215 25% 15% / 0.1);
+
+    --chart-1: 210 80% 50%;
+    --chart-2: 200 75% 45%;
+    --chart-3: 190 70% 50%;
+    --chart-4: 220 65% 55%;
+    --chart-5: 180 60% 45%;
   }
 }
 
@@ -98,8 +53,141 @@ All colors MUST be HSL.
   * {
     @apply border-border;
   }
-
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
+}
+
+@layer components {
+  .kpi-card {
+    @apply rounded-xl bg-card p-4 border border-border transition-all duration-200;
+    box-shadow: var(--card-shadow);
+  }
+  .kpi-card:hover {
+    box-shadow: var(--card-shadow-hover);
+    transform: translateY(-1px);
+  }
+  .kpi-value {
+    @apply text-2xl font-bold text-primary;
+  }
+  .kpi-label {
+    @apply text-xs text-muted-foreground font-medium uppercase tracking-wide mt-1;
+  }
+  .filter-section {
+    @apply space-y-2 border-b border-border pb-3 mb-3;
+  }
+  .filter-label {
+    @apply text-xs font-semibold text-muted-foreground uppercase tracking-wider;
+  }
+  .dashboard-panel {
+    @apply rounded-xl bg-card border border-border overflow-hidden;
+    box-shadow: var(--card-shadow);
+  }
+  .map-container {
+    @apply w-full rounded-xl overflow-hidden;
+    box-shadow: var(--map-shadow);
+  }
+}
+
+.leaflet-container {
+  background: hsl(210, 20%, 98%);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 8px 30px -8px rgba(0,0,0,0.15);
+  padding: 0;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  min-width: 260px;
+}
+
+.district-tooltip {
+  background: white;
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px -4px rgba(0,0,0,0.15);
+  padding: 10px 14px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+}
+
+.district-tooltip .district-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: hsl(215, 25%, 15%);
+  margin-bottom: 6px;
+}
+
+.district-tooltip .tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 2px 0;
+  color: hsl(215, 15%, 40%);
+}
+
+.district-tooltip .tooltip-row .value {
+  font-weight: 600;
+  color: hsl(210, 80%, 50%);
+}
+
+.custom-cluster-icon {
+  background: hsl(210, 80%, 50%);
+  border: 3px solid white;
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.facility-popup {
+  padding: 16px;
+}
+
+.facility-popup h3 {
+  font-weight: 700;
+  font-size: 15px;
+  color: hsl(210, 80%, 50%);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.facility-popup .popup-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  font-size: 12px;
+}
+
+.facility-popup .popup-label {
+  color: hsl(215, 15%, 50%);
+  font-weight: 500;
+}
+
+.facility-popup .popup-value {
+  color: hsl(215, 25%, 20%);
+  font-weight: 400;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(210, 20%, 85%);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(210, 20%, 75%);
 }
