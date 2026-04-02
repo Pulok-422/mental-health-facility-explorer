@@ -126,7 +126,7 @@ export default function DistrictMap({
     filters.showChoropleth && filters.showMarkers ? 0.35 : filters.showChoropleth ? 0.55 : 0;
 
   useEffect(() => {
-    const styleId = 'user-location-pulse-style';
+    const styleId = 'user-location-popup-style';
     if (document.getElementById(styleId)) return;
 
     const style = document.createElement('style');
@@ -145,6 +145,74 @@ export default function DistrictMap({
           transform: scale(2.4);
           opacity: 0;
         }
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .leaflet-popup.user-location-leaflet-popup .leaflet-popup-content-wrapper {
+        padding: 0;
+        border-radius: 12px;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      .leaflet-popup.user-location-leaflet-popup .leaflet-popup-content {
+        margin: 0;
+      }
+
+      .leaflet-popup.user-location-leaflet-popup .leaflet-popup-tip {
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+      }
+
+      .leaflet-popup.user-location-leaflet-popup .leaflet-popup-close-button {
+        display: none;
+      }
+
+      .user-location-popup {
+        min-width: 150px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(229, 231, 235, 0.95);
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(8px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+        animation: fadeInUp 0.22s ease;
+      }
+
+      .user-location-popup-title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 4px;
+        font-size: 13px;
+        font-weight: 700;
+        color: #111827;
+        line-height: 1.2;
+      }
+
+      .user-location-popup-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 9999px;
+        background: #dc2626;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.16);
+        flex: 0 0 auto;
+      }
+
+      .user-location-popup-subtitle {
+        font-size: 11px;
+        color: #6b7280;
+        line-height: 1.35;
       }
     `;
     document.head.appendChild(style);
@@ -520,11 +588,28 @@ export default function DistrictMap({
             iconSize: [18, 18],
             iconAnchor: [9, 9],
           }),
-        })
-          .addTo(map)
-          .bindPopup('You are here')
-          .openPopup();
+        }).addTo(map);
 
+        userMarkerRef.current.bindPopup(
+          `
+            <div class="user-location-popup">
+              <div class="user-location-popup-title">
+                <span class="user-location-popup-dot"></span>
+                <span>Your Location</span>
+              </div>
+              <div class="user-location-popup-subtitle">
+                ${latitude.toFixed(4)}, ${longitude.toFixed(4)}
+              </div>
+            </div>
+          `,
+          {
+            closeButton: false,
+            offset: [0, -10],
+            className: 'user-location-leaflet-popup',
+          }
+        );
+
+        userMarkerRef.current.openPopup();
         map.setView([latitude, longitude], 10);
       },
       () => {
