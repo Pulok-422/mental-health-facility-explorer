@@ -57,6 +57,33 @@ function getQuantileColor(value: number, breaks: number[], palette: string[]): s
   return palette[palette.length - 1];
 }
 
+function getMentalHealthFacilityIcon() {
+  return L.divIcon({
+    className: 'mental-health-facility-marker-wrapper',
+    html: `
+      <div class="mental-health-facility-marker">
+        <svg viewBox="0 0 64 64" width="30" height="30" aria-hidden="true">
+          <rect x="12" y="22" width="40" height="30" rx="3" fill="#cbd5e1" stroke="#111827" stroke-width="2.2"/>
+          <rect x="24" y="40" width="16" height="12" rx="1.5" fill="#60a5fa" stroke="#111827" stroke-width="2"/>
+          <rect x="17" y="27" width="6" height="11" rx="1" fill="#60a5fa" stroke="#111827" stroke-width="1.6"/>
+          <rect x="25" y="27" width="6" height="11" rx="1" fill="#60a5fa" stroke="#111827" stroke-width="1.6"/>
+          <rect x="33" y="27" width="6" height="11" rx="1" fill="#60a5fa" stroke="#111827" stroke-width="1.6"/>
+          <rect x="41" y="27" width="6" height="11" rx="1" fill="#60a5fa" stroke="#111827" stroke-width="1.6"/>
+          <rect x="20" y="36" width="24" height="4" rx="1" fill="#f472b6" stroke="#111827" stroke-width="1.6"/>
+          <rect x="12" y="18" width="40" height="4" fill="#7dd3fc" stroke="#111827" stroke-width="1.6"/>
+          <path d="M32 8 C28 4,20 6,20 14 C20 20,32 28,32 28 C32 28,44 20,44 14 C44 6,36 4,32 8Z"
+            fill="#fb7185" stroke="#111827" stroke-width="2"/>
+          <rect x="30" y="11.5" width="4" height="9" rx="1" fill="#ffffff" stroke="#111827" stroke-width="1"/>
+          <rect x="27.5" y="14" width="9" height="4" rx="1" fill="#ffffff" stroke="#111827" stroke-width="1"/>
+        </svg>
+      </div>
+    `,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+    popupAnchor: [0, -16],
+  });
+}
+
 interface DistrictMapProps {
   geojson: any;
   districts: DistrictPop[];
@@ -126,7 +153,7 @@ export default function DistrictMap({
     filters.showChoropleth && filters.showMarkers ? 0.35 : filters.showChoropleth ? 0.55 : 0;
 
   useEffect(() => {
-    const styleId = 'user-location-popup-style';
+    const styleId = 'district-map-custom-styles';
     if (document.getElementById(styleId)) return;
 
     const style = document.createElement('style');
@@ -213,6 +240,25 @@ export default function DistrictMap({
         font-size: 11px;
         color: #6b7280;
         line-height: 1.35;
+      }
+
+      .mental-health-facility-marker-wrapper {
+        background: transparent;
+        border: 0;
+      }
+
+      .mental-health-facility-marker {
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.22));
+        transition: transform 0.15s ease;
+      }
+
+      .mental-health-facility-marker:hover {
+        transform: scale(1.12);
       }
     `;
     document.head.appendChild(style);
@@ -354,16 +400,11 @@ export default function DistrictMap({
       },
     });
 
-    const icon = L.divIcon({
-      className: '',
-      html: `<div style="width:8px;height:8px;background:hsl(210,80%,50%);border:2px solid white;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.3)"></div>`,
-      iconSize: [12, 12],
-      iconAnchor: [6, 6],
-    });
-
     facilities.forEach((f) => {
       if (f.latitude && f.longitude) {
-        const marker = L.marker([f.latitude, f.longitude], { icon });
+        const marker = L.marker([f.latitude, f.longitude], {
+          icon: getMentalHealthFacilityIcon(),
+        });
 
         marker.bindPopup(
           `
