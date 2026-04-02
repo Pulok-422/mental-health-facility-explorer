@@ -4,7 +4,7 @@ import type { DistrictPop, Facility } from '@/types/dashboard';
 interface DashboardData {
   districts: DistrictPop[];
   facilities: Facility[];
-  geojson: GeoJSON.FeatureCollection | null;
+  geojson: any | null;
   loading: boolean;
 }
 
