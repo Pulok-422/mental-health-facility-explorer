@@ -99,10 +99,7 @@ export default function FilterPanel({
 
   return (
     <div className="h-full flex flex-col">
-
-      {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto p-4">
-
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
             <Layers className="h-4 w-4 text-primary" />
@@ -219,21 +216,20 @@ export default function FilterPanel({
             onChange={(v) => updateFilter('cost', v)}
           />
         </CollapsibleSection>
-
       </div>
 
-      {/* Footer */}
-      <div className="px-4 py-2 border-t border-border/60 text-center bg-background">
-        <a
-          href="https://hasibulahmedpulok.vercel.app/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[10px] text-muted-foreground/80 hover:text-primary transition-colors"
-        >
-          Developed by Hasibul Ahmed Pulok
-        </a>
+      <div className="py-2 border-t border-border/60 text-center bg-background">
+        <div className="px-4">
+          <a
+            href="https://hasibulahmedpulok.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] text-muted-foreground/80 hover:text-primary transition-colors"
+          >
+            Developed by Hasibul Ahmed Pulok
+          </a>
+        </div>
       </div>
-
     </div>
   );
 }
