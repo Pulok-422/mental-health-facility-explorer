@@ -10,7 +10,7 @@ import DistrictInfoCard from './DistrictInfoCard';
 import MapControls, { getMetricPalette } from './MapControls';
 
 const BANGLADESH_CENTER: [number, number] = [23.7, 90.35];
-const BANGLADESH_ZOOM = 7.5;
+const BANGLADESH_ZOOM = 8.5;
 const BANGLADESH_BOUNDS: L.LatLngBoundsExpression = [[20.5, 88.0], [26.7, 92.7]];
 
 const TILE_LAYERS: Record<'light' | 'street' | 'satellite', string> = {
@@ -84,6 +84,41 @@ function getMentalHealthFacilityIcon() {
     iconAnchor: [17, 17],
     popupAnchor: [0, -16],
   });
+}
+
+function metricLabel(metric: ChoroplethMetric) {
+  switch (metric) {
+    case 'facilities':
+      return 'Total Facilities';
+    case 'population':
+      return 'Population';
+    case 'facilitiesPer100k':
+      return 'Facilities per 100K';
+    case 'povertyIndex':
+      return 'Poverty Index';
+    case 'literacyRate':
+      return 'Literacy Rate';
+    case 'urbanPercent':
+      return 'Urban Percent';
+    default:
+      return 'Metric';
+  }
+}
+
+function formatRangeValue(value: number, metric: ChoroplethMetric) {
+  if (!Number.isFinite(value)) return '0';
+
+  if (metric === 'population') {
+    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+    if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
+    return value.toFixed(0);
+  }
+
+  if (metric === 'literacyRate' || metric === 'urbanPercent') {
+    return `${value.toFixed(1)}%`;
+  }
+
+  return value.toFixed(2).replace(/\.00$/, '');
 }
 
 interface DistrictMapProps {
@@ -266,6 +301,16 @@ export default function DistrictMap({
       @media (max-width: 768px) {
         .map-controls-panel {
           width: min(290px, calc(100vw - 24px));
+        }
+
+        .map-basemap-panel {
+          max-width: calc(100vw - 24px);
+          flex-wrap: wrap;
+        }
+
+        .map-legend-floating {
+          max-width: calc(100vw - 24px);
+          min-width: 0;
         }
       }
     `;
@@ -690,6 +735,23 @@ export default function DistrictMap({
       className="map-container relative"
       style={{ height: isFullscreen ? '100vh' : '560px' }}
     >
+      <div className="map-basemap-panel absolute top-3 left-3 z-[1000] rounded-2xl border border-border bg-card/95 p-2 shadow-xl backdrop-blur-md flex gap-2">
+        {(['light', 'street', 'satellite'] as const).map((mode) => (
+          <button
+            key={mode}
+            type="button"
+            onClick={() => setBasemap(mode)}
+            className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+              basemap === mode
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-background text-foreground border-border hover:bg-muted'
+            }`}
+          >
+            {mode === 'light' ? 'Light' : mode === 'street' ? 'Street' : 'Satellite'}
+          </button>
+        ))}
+      </div>
+
       <MapControls
         filters={filters}
         updateFilter={updateFilter}
@@ -705,6 +767,43 @@ export default function DistrictMap({
         metricRange={metricRange}
         getQuantileBreaks={() => breaks}
       />
+
+      {filters.showChoropleth && breaks.length > 0 && (
+        <div className="map-legend-floating absolute left-3 bottom-3 z-[1000] min-w-[220px] rounded-2xl border border-border bg-card/95 p-3 shadow-xl backdrop-blur-md">
+          <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-3">
+            Legend
+          </div>
+
+          <div className="mb-2 text-sm font-medium text-foreground">
+            {metricLabel(filters.choroplethMetric)}
+          </div>
+
+          <div className="space-y-2">
+            {(() => {
+              const labels = ['Low', 'Moderate-Low', 'Moderate', 'Moderate-High', 'High'];
+
+              return palette.map((color, idx) => {
+                const lo = idx === 0 ? metricRange.min : breaks[idx - 1];
+                const hi = idx < breaks.length ? breaks[idx] : metricRange.max;
+
+                return (
+                  <div key={idx} className="flex items-center gap-2 text-[11px]">
+                    <div
+                      className="w-4 h-3 rounded-sm border border-black/10 shrink-0"
+                      style={{ backgroundColor: color }}
+                    />
+                    <span className="text-foreground">{labels[idx]}</span>
+                    <span className="ml-auto text-muted-foreground">
+                      {formatRangeValue(lo, filters.choroplethMetric)} to{' '}
+                      {formatRangeValue(hi, filters.choroplethMetric)}
+                    </span>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+        </div>
+      )}
 
       {selectedDistrictData && (
         <DistrictInfoCard district={selectedDistrictData} onClose={() => onDistrictClick(null)} />
