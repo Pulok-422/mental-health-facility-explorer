@@ -24,7 +24,6 @@ export default function KPICards({ districts, facilities }: KPICardsProps) {
       { label: 'Total Population', value: (totalPop / 1000000).toFixed(1) + 'M', icon: Users, color: 'text-primary' },
       { label: 'Avg Poverty Index', value: avgPoverty.toFixed(1), icon: TrendingDown, color: 'text-destructive' },
       { label: 'Avg Literacy Rate', value: avgLiteracy.toFixed(1) + '%', icon: BookOpen, color: 'text-accent' },
-      { label: 'Avg Urban %', value: avgUrban.toFixed(1) + '%', icon: Building2, color: 'text-primary' },
       { label: 'Facilities per 100K Population', value: facPer100k.toFixed(2), icon: Heart, color: 'text-accent' },
       { label: 'Facilities with Free Service', value: freeFac, icon: Shield, color: 'text-primary' },
     ];
@@ -43,9 +42,6 @@ export default function KPICards({ districts, facilities }: KPICardsProps) {
           </div>
         ))}
       </div>
-      <p className="text-[10px] text-muted-foreground mt-2 px-1">
-        Based on filtered data (n = {facilities.length} facilities across {districts.length} districts)
-      </p>
     </div>
   );
 }
