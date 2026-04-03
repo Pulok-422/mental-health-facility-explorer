@@ -37,12 +37,6 @@ export default function KPICards({ districts, facilities }: KPICardsProps) {
         color: 'text-accent',
       },
       {
-        label: 'Total Population',
-        value: `${(totalPop / 1000000).toFixed(1)}M`,
-        icon: Users,
-        color: 'text-primary',
-      },
-      {
         label: 'Avg Poverty Index',
         value: avgPoverty.toFixed(1),
         icon: TrendingDown,
