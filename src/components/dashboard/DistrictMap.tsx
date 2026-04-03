@@ -7,6 +7,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet.heat';
 import type { DistrictPop, Facility, Filters, ChoroplethMetric, BubbleMetric } from '@/types/dashboard';
 import DistrictInfoCard from './DistrictInfoCard';
+import MapControls, { getMetricPalette } from './MapControls';
 
 const BANGLADESH_CENTER: [number, number] = [23.7, 90.35];
 const BANGLADESH_ZOOM = 7.5;
@@ -141,12 +142,7 @@ export default function DistrictMap({
   const breaks = useMemo(() => quantileBreaks(metricValues, 5), [metricValues]);
 
   const palette = useMemo(
-    () => {
-      const p = (typeof window !== 'undefined' && (window as any).getMetricPalette)
-        ? (window as any).getMetricPalette(filters.choroplethMetric)
-        : null;
-      return p || ['#dbeafe', '#93c5fd', '#60a5fa', '#3b82f6', '#1d4ed8'];
-    },
+    () => getMetricPalette(filters.choroplethMetric),
     [filters.choroplethMetric]
   );
 
@@ -267,174 +263,9 @@ export default function DistrictMap({
         transform: scale(1.12);
       }
 
-      .map-segmented-control {
-        position: absolute;
-        top: 12px;
-        left: 12px;
-        z-index: 1000;
-        display: inline-flex;
-        gap: 4px;
-        padding: 4px;
-        border: 1px solid rgba(226, 232, 240, 0.95);
-        border-radius: 14px;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
-      }
-
-      .map-segmented-btn {
-        border: 0;
-        border-radius: 10px;
-        padding: 8px 12px;
-        background: transparent;
-        color: #64748b;
-        font-size: 12px;
-        font-weight: 700;
-        line-height: 1;
-        cursor: pointer;
-        transition: all 0.16s ease;
-      }
-
-      .map-segmented-btn:hover {
-        background: rgba(59, 130, 246, 0.08);
-        color: #2563eb;
-      }
-
-      .map-segmented-btn.active {
-        background: #2b7de9;
-        color: #ffffff;
-        box-shadow: 0 2px 8px rgba(43, 125, 233, 0.28);
-      }
-
-      .map-legend-panel {
-        position: absolute;
-        left: 12px;
-        bottom: 12px;
-        z-index: 1000;
-        min-width: 220px;
-        border: 1px solid rgba(226, 232, 240, 0.95);
-        border-radius: 14px;
-        background: rgba(255, 255, 255, 0.96);
-        backdrop-filter: blur(10px);
-        box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
-        padding: 10px 12px;
-      }
-
-      .map-legend-title {
-        margin: 0 0 8px 0;
-        font-size: 11px;
-        font-weight: 800;
-        letter-spacing: 0.04em;
-        color: #64748b;
-        text-transform: uppercase;
-      }
-
-      .map-legend-scale {
-        height: 14px;
-        border-radius: 9999px;
-        overflow: hidden;
-        display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        border: 1px solid rgba(226, 232, 240, 0.95);
-      }
-
-      .map-legend-labels {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 8px;
-        font-size: 11px;
-        color: #64748b;
-      }
-
-      .map-legend-breaks {
-        margin-top: 6px;
-        font-size: 11px;
-        color: #64748b;
-      }
-
-      .map-action-stack {
-        position: absolute;
-        right: 12px;
-        top: 12px;
-        z-index: 1000;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .map-action-btn {
-        width: 38px;
-        height: 38px;
-        border: 1px solid rgba(226, 232, 240, 0.95);
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.96);
-        color: #334155;
-        font-size: 18px;
-        font-weight: 700;
-        cursor: pointer;
-        box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
-        backdrop-filter: blur(10px);
-        transition: all 0.16s ease;
-      }
-
-      .map-action-btn:hover {
-        background: #f8fafc;
-        color: #111827;
-      }
-
-      .map-toggle-stack {
-        position: absolute;
-        right: 12px;
-        bottom: 84px;
-        z-index: 1000;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .map-mini-toggle {
-        padding: 8px 12px;
-        border: 1px solid rgba(226, 232, 240, 0.95);
-        border-radius: 12px;
-        background: rgba(255,255,255,0.96);
-        color: #334155;
-        font-size: 12px;
-        font-weight: 700;
-        cursor: pointer;
-        box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
-        backdrop-filter: blur(10px);
-      }
-
-      .map-mini-toggle.active {
-        background: #2b7de9;
-        color: #ffffff;
-        border-color: #2b7de9;
-      }
-
       @media (max-width: 768px) {
-        .map-segmented-control {
-          top: 10px;
-          left: 10px;
-          right: 72px;
-          overflow-x: auto;
-          white-space: nowrap;
-        }
-
-        .map-legend-panel {
-          left: 10px;
-          bottom: 10px;
-          max-width: calc(100% - 20px);
-          min-width: 0;
-        }
-
-        .map-action-stack {
-          top: 10px;
-          right: 10px;
-        }
-
-        .map-toggle-stack {
-          right: 10px;
-          bottom: 92px;
+        .map-controls-panel {
+          width: min(290px, calc(100vw - 24px));
         }
       }
     `;
@@ -777,9 +608,8 @@ export default function DistrictMap({
           map.removeLayer(userMarkerRef.current);
         }
 
-        // Find nearest facility
         let nearest: { name: string; dist: number } | null = null;
-        facilities.forEach(f => {
+        facilities.forEach((f) => {
           if (!f.latitude || !f.longitude) return;
           const d = map.distance([latitude, longitude], [f.latitude, f.longitude]) / 1000;
           if (!nearest || d < nearest.dist) {
@@ -790,8 +620,8 @@ export default function DistrictMap({
         const nearestHtml = nearest
           ? `<div style="margin-top:6px;padding-top:6px;border-top:1px solid #e5e7eb;font-size:11px;color:#374151">
               <div style="font-weight:600;color:#1d4ed8">Nearest Facility</div>
-              <div>${(nearest as any).name}</div>
-              <div style="color:#6b7280">${(nearest as any).dist.toFixed(1)} km · ~${Math.round((nearest as any).dist / 0.8 * 2)} min</div>
+              <div>${nearest.name}</div>
+              <div style="color:#6b7280">${nearest.dist.toFixed(1)} km · ~${Math.round((nearest.dist / 0.8) * 2)} min</div>
             </div>`
           : '';
 
@@ -829,7 +659,7 @@ export default function DistrictMap({
         setTimeout(() => setLocationError(null), 3000);
       }
     );
-  }, []);
+  }, [facilities]);
 
   const handleToggleFullscreen = useCallback(() => {
     const el = wrapperRef.current;
@@ -860,81 +690,21 @@ export default function DistrictMap({
       className="map-container relative"
       style={{ height: isFullscreen ? '100vh' : '560px' }}
     >
-      <div className="map-segmented-control">
-        <button
-          type="button"
-          className={`map-segmented-btn ${basemap === 'light' ? 'active' : ''}`}
-          onClick={() => setBasemap('light')}
-        >
-          Light
-        </button>
-        <button
-          type="button"
-          className={`map-segmented-btn ${basemap === 'street' ? 'active' : ''}`}
-          onClick={() => setBasemap('street')}
-        >
-          Street
-        </button>
-        <button
-          type="button"
-          className={`map-segmented-btn ${basemap === 'satellite' ? 'active' : ''}`}
-          onClick={() => setBasemap('satellite')}
-        >
-          Satellite
-        </button>
-      </div>
-
-      <div className="map-action-stack">
-        <button type="button" className="map-action-btn" onClick={handleLocateUser} title="Locate me">
-          ⌖
-        </button>
-        <button type="button" className="map-action-btn" onClick={handleFitBangladesh} title="Fit Bangladesh">
-          ⛶
-        </button>
-        {selectedDistrict && (
-          <button type="button" className="map-action-btn" onClick={handleFitSelected} title="Fit selected district">
-            ◎
-          </button>
-        )}
-        <button type="button" className="map-action-btn" onClick={handleResetView} title="Reset view">
-          ↺
-        </button>
-        <button type="button" className="map-action-btn" onClick={handleToggleFullscreen} title="Fullscreen">
-          {isFullscreen ? '🗗' : '🗖'}
-        </button>
-      </div>
-
-
-      {filters.showChoropleth && breaks.length > 0 && (
-        <div className="map-legend-panel">
-          <div className="map-legend-title">
-            {filters.choroplethMetric === 'facilities' ? 'Total Facilities' :
-             filters.choroplethMetric === 'facilitiesPer100k' ? 'Per 100K' :
-             filters.choroplethMetric === 'povertyIndex' ? 'Poverty Index' :
-             filters.choroplethMetric === 'literacyRate' ? 'Literacy Rate' :
-             filters.choroplethMetric === 'urbanPercent' ? 'Urban %' :
-             filters.choroplethMetric === 'population' ? 'Population' : 'Legend'}
-          </div>
-          <div className="space-y-1">
-            {(() => {
-              const labels = ['Low', 'Moderate-Low', 'Moderate', 'Moderate-High', 'High'];
-              const ranges = palette.map((color, idx) => {
-                const lo = idx === 0 ? metricRange.min : breaks[idx - 1];
-                const hi = idx < breaks.length ? breaks[idx] : metricRange.max;
-                const fmt = (v: number) => v > 10000 ? (v / 1e6).toFixed(2) + 'M' : Number.isFinite(v) ? v.toFixed(1) : '0';
-                return (
-                  <div key={idx} className="flex items-center gap-2 text-[11px]">
-                    <div className="w-4 h-3 rounded-sm flex-shrink-0" style={{ background: color }} />
-                    <span className="text-foreground font-medium">{labels[idx]}</span>
-                    <span className="text-muted-foreground ml-auto">({fmt(lo)}–{fmt(hi)})</span>
-                  </div>
-                );
-              });
-              return ranges;
-            })()}
-          </div>
-        </div>
-      )}
+      <MapControls
+        filters={filters}
+        updateFilter={updateFilter}
+        basemap={basemap}
+        setBasemap={setBasemap}
+        onResetView={handleResetView}
+        onFitBangladesh={handleFitBangladesh}
+        onFitSelected={handleFitSelected}
+        onLocateUser={handleLocateUser}
+        onToggleFullscreen={handleToggleFullscreen}
+        isFullscreen={isFullscreen}
+        hasSelection={!!selectedDistrict}
+        metricRange={metricRange}
+        getQuantileBreaks={() => breaks}
+      />
 
       {selectedDistrictData && (
         <DistrictInfoCard district={selectedDistrictData} onClose={() => onDistrictClick(null)} />
