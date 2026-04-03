@@ -10,8 +10,9 @@ import DistrictInfoCard from './DistrictInfoCard';
 import MapControls, { getMetricPalette } from './MapControls';
 
 const BANGLADESH_CENTER: [number, number] = [23.7, 90.35];
-const BANGLADESH_ZOOM = 12;
+const BANGLADESH_ZOOM = 11;
 const BANGLADESH_BOUNDS: L.LatLngBoundsExpression = [[20.5, 88.0], [26.7, 92.7]];
+const NO_DATA_FILL = '#9ca3af';
 
 const TILE_LAYERS: Record<'light' | 'street' | 'satellite', string> = {
   light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
@@ -340,6 +341,8 @@ export default function DistrictMap({
     }).addTo(map);
 
     map.fitBounds(BANGLADESH_BOUNDS, { padding: [10, 10] });
+    map.setZoom(11);
+
     mapRef.current = map;
 
     return () => {
@@ -368,10 +371,16 @@ export default function DistrictMap({
         const code = feature?.properties?.DIS_CODE;
         const d = districtMap.get(code);
         const isSelected = selectedDistrict === code;
-        const value = d ? getMetricValue(d, filters.choroplethMetric) : 0;
+
+        const hasData = !!d;
+        const value = hasData ? getMetricValue(d, filters.choroplethMetric) : 0;
 
         return {
-          fillColor: filters.showChoropleth ? getQuantileColor(value, breaks, palette) : 'transparent',
+          fillColor: filters.showChoropleth
+            ? hasData
+              ? getQuantileColor(value, breaks, palette)
+              : NO_DATA_FILL
+            : 'transparent',
           fillOpacity: isSelected ? Math.min(fillOpacity + 0.2, 0.8) : fillOpacity,
           color: isSelected ? '#000000' : '#1a1a1a',
           weight: isSelected ? 3 : 1.4,
@@ -392,6 +401,14 @@ export default function DistrictMap({
             <div class="tooltip-row"><span>Poverty Index</span><span class="value">${d['Poverty Index']}</span></div>
             <div class="tooltip-row"><span>Literacy</span><span class="value">${d.Literacy_rate}%</span></div>
             <div class="tooltip-row"><span>Per 100K</span><span class="value">${(d.facilitiesPer100k || 0).toFixed(2)}</span></div>
+          `,
+            { className: 'district-tooltip', sticky: true }
+          );
+        } else {
+          layer.bindTooltip(
+            `
+            <div class="district-name">${name}</div>
+            <div class="tooltip-row"><span>Status</span><span class="value">No data</span></div>
           `,
             { className: 'district-tooltip', sticky: true }
           );
@@ -619,7 +636,9 @@ export default function DistrictMap({
   }, [geojson, filters.showLabels]);
 
   const handleFitBangladesh = useCallback(() => {
-    mapRef.current?.fitBounds(BANGLADESH_BOUNDS, { padding: [10, 10] });
+    if (!mapRef.current) return;
+    mapRef.current.fitBounds(BANGLADESH_BOUNDS, { padding: [10, 10] });
+    mapRef.current.setZoom(11);
   }, []);
 
   const handleFitSelected = useCallback(() => {
@@ -631,7 +650,7 @@ export default function DistrictMap({
   }, [selectedDistrict, geojson]);
 
   const handleResetView = useCallback(() => {
-    mapRef.current?.setView(BANGLADESH_CENTER, BANGLADESH_ZOOM);
+    mapRef.current?.setView(BANGLADESH_CENTER, 11);
   }, []);
 
   const handleLocateUser = useCallback(() => {
@@ -782,24 +801,36 @@ export default function DistrictMap({
             {(() => {
               const labels = ['Low', 'Moderate-Low', 'Moderate', 'Moderate-High', 'High'];
 
-              return palette.map((color, idx) => {
-                const lo = idx === 0 ? metricRange.min : breaks[idx - 1];
-                const hi = idx < breaks.length ? breaks[idx] : metricRange.max;
+              return (
+                <>
+                  {palette.map((color, idx) => {
+                    const lo = idx === 0 ? metricRange.min : breaks[idx - 1];
+                    const hi = idx < breaks.length ? breaks[idx] : metricRange.max;
 
-                return (
-                  <div key={idx} className="flex items-center gap-2 text-[11px]">
+                    return (
+                      <div key={idx} className="flex items-center gap-2 text-[11px]">
+                        <div
+                          className="w-4 h-3 rounded-sm border border-black/10 shrink-0"
+                          style={{ backgroundColor: color }}
+                        />
+                        <span className="text-foreground">{labels[idx]}</span>
+                        <span className="ml-auto text-muted-foreground">
+                          {formatRangeValue(lo, filters.choroplethMetric)} to{' '}
+                          {formatRangeValue(hi, filters.choroplethMetric)}
+                        </span>
+                      </div>
+                    );
+                  })}
+
+                  <div className="flex items-center gap-2 text-[11px]">
                     <div
                       className="w-4 h-3 rounded-sm border border-black/10 shrink-0"
-                      style={{ backgroundColor: color }}
+                      style={{ backgroundColor: NO_DATA_FILL }}
                     />
-                    <span className="text-foreground">{labels[idx]}</span>
-                    <span className="ml-auto text-muted-foreground">
-                      {formatRangeValue(lo, filters.choroplethMetric)} to{' '}
-                      {formatRangeValue(hi, filters.choroplethMetric)}
-                    </span>
+                    <span className="text-foreground">No data</span>
                   </div>
-                );
-              });
+                </>
+              );
             })()}
           </div>
         </div>
