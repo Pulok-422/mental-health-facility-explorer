@@ -12,13 +12,11 @@ export default function KPICards({ districts, facilities }: KPICardsProps) {
     const totalFacilities = facilities.length;
     const districtsCovered = new Set(facilities.map(f => f.DIS_CODE)).size;
     const totalPop = districts.reduce((s, d) => s + d.Population, 0);
-    const avgPoverty = districts.length > 0 ? districts.reduce((s, d) => s + d["Poverty Index"], 0) / districts.length : 0;
+    const avgPoverty = districts.length > 0 ? districts.reduce((s, d) => s + d['Poverty Index'], 0) / districts.length : 0;
     const avgLiteracy = districts.length > 0 ? districts.reduce((s, d) => s + d.Literacy_rate, 0) / districts.length : 0;
     const avgUrban = districts.length > 0 ? districts.reduce((s, d) => s + d.Urban_percent, 0) / districts.length : 0;
     const facPer100k = totalPop > 0 ? (totalFacilities / totalPop) * 100000 : 0;
-    const popPerFac = totalFacilities > 0 ? totalPop / totalFacilities : 0;
     const freeFac = facilities.filter(f => f.cost?.toLowerCase() === 'free').length;
-    const govFac = facilities.filter(f => f.ownership?.toLowerCase() === 'government').length;
 
     return [
       { label: 'Total Facilities', value: totalFacilities.toLocaleString(), icon: Activity, color: 'text-primary' },
@@ -33,16 +31,21 @@ export default function KPICards({ districts, facilities }: KPICardsProps) {
   }, [districts, facilities]);
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-      {kpis.map((kpi, i) => (
-        <div key={i} className="kpi-card animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
-          <div className="flex items-center gap-2 mb-1">
-            <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
+    <div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+        {kpis.map((kpi, i) => (
+          <div key={i} className="kpi-card animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
+            <div className="flex items-center gap-2 mb-1">
+              <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
+            </div>
+            <div className="kpi-value">{kpi.value}</div>
+            <div className="kpi-label">{kpi.label}</div>
           </div>
-          <div className="kpi-value">{kpi.value}</div>
-          <div className="kpi-label">{kpi.label}</div>
-        </div>
-      ))}
+        ))}
+      </div>
+      <p className="text-[10px] text-muted-foreground mt-2 px-1">
+        Based on filtered data (n = {facilities.length} facilities across {districts.length} districts)
+      </p>
     </div>
   );
 }

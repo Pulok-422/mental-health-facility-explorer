@@ -9,6 +9,7 @@ import InsightsTab from '@/components/dashboard/InsightsTab';
 import DataTable from '@/components/dashboard/DataTable';
 import DistrictSummaryCards from '@/components/dashboard/DistrictSummaryCards';
 import CompareTab from '@/components/dashboard/CompareTab';
+import PriorityDistricts from '@/components/dashboard/PriorityDistricts';
 import { Map, BarChart3, Table2, GitCompare, Activity, Menu, X } from 'lucide-react';
 
 export default function Index() {
@@ -40,65 +41,68 @@ export default function Index() {
   ];
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
-      <aside
-        className={`bg-card border-r border-border transition-all duration-300 flex-shrink-0 ${
-          sidebarOpen ? 'w-72' : 'w-0 overflow-hidden'
-        }`}
-      >
-        <div className="h-screen sticky top-0 overflow-hidden">
-          <FilterPanel
-            filters={filters}
-            updateFilter={updateFilter}
-            resetFilters={resetFilters}
-            filterOptions={filterOptions}
-            selectedDistrict={selectedDistrict}
-            setSelectedDistrict={setSelectedDistrict}
-          />
-        </div>
-      </aside>
-
-      {/* Main */}
-      <main className="flex-1 min-w-0">
-        {/* Header */}
-        <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                {sidebarOpen ? <X className="h-4 w-4 text-muted-foreground" /> : <Menu className="h-4 w-4 text-muted-foreground" />}
-              </button>
-              <div>
-                <h1 className="text-base font-bold text-foreground">Mental Health Facility Explorer</h1>
-                <p className="text-xs text-muted-foreground">District-wise dashboard for Bangladesh</p>
-              </div>
-            </div>
-            <div className="flex gap-1 bg-secondary rounded-lg p-0.5">
-              {tabs.map(t => (
-                <button
-                  key={t.key}
-                  onClick={() => setActiveTab(t.key)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    activeTab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
-                  }`}
-                >
-                  <t.icon className="h-3.5 w-3.5" /> {t.label}
-                </button>
-              ))}
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header - full width */}
+      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+              {sidebarOpen ? <X className="h-4 w-4 text-muted-foreground" /> : <Menu className="h-4 w-4 text-muted-foreground" />}
+            </button>
+            <div>
+              <h1 className="text-base font-bold text-foreground">Mental Health Facility Explorer</h1>
+              <p className="text-xs text-muted-foreground">District-wise decision-support dashboard for Bangladesh</p>
             </div>
           </div>
-        </header>
+          <div className="flex gap-1 bg-secondary rounded-lg p-0.5">
+            {tabs.map(t => (
+              <button
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  activeTab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                <t.icon className="h-3.5 w-3.5" /> {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </header>
 
-        <div className="p-4 space-y-4">
-          {/* KPIs */}
-          <KPICards districts={activeDistricts} facilities={activeFacilities} />
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        <aside
+          className={`bg-card border-r border-border transition-all duration-300 flex-shrink-0 ${
+            sidebarOpen ? 'w-72' : 'w-0 overflow-hidden'
+          }`}
+        >
+          <div className="h-[calc(100vh-52px)] sticky top-[52px] overflow-hidden">
+            <FilterPanel
+              filters={filters}
+              updateFilter={updateFilter}
+              resetFilters={resetFilters}
+              filterOptions={filterOptions}
+              selectedDistrict={selectedDistrict}
+              setSelectedDistrict={setSelectedDistrict}
+            />
+          </div>
+        </aside>
 
-          {/* District Summary */}
-          <DistrictSummaryCards districts={activeDistricts} />
+        {/* Main */}
+        <main className="flex-1 min-w-0">
+          <div className="p-4 space-y-4">
+            {/* KPIs */}
+            <KPICards districts={activeDistricts} facilities={activeFacilities} />
 
-          {/* Tab Content */}
-          {activeTab === 'map' && (
-            <>
+            {/* Priority Districts */}
+            <PriorityDistricts districts={activeDistricts} />
+
+            {/* District Summary */}
+            <DistrictSummaryCards districts={activeDistricts} />
+
+            {/* Tab Content */}
+            {activeTab === 'map' && (
               <DistrictMap
                 geojson={geojson}
                 districts={activeDistricts}
@@ -108,26 +112,22 @@ export default function Index() {
                 selectedDistrict={selectedDistrict}
                 onDistrictClick={setSelectedDistrict}
               />
-              <DataTable
-                districts={activeDistricts}
-                facilities={activeFacilities}
-              />
-            </>
-          )}
+            )}
 
-          {activeTab === 'insights' && (
-            <InsightsTab districts={activeDistricts} facilities={activeFacilities} />
-          )}
+            {activeTab === 'insights' && (
+              <InsightsTab districts={activeDistricts} facilities={activeFacilities} />
+            )}
 
-          {activeTab === 'table' && (
-            <DataTable districts={activeDistricts} facilities={activeFacilities} />
-          )}
+            {activeTab === 'table' && (
+              <DataTable districts={activeDistricts} facilities={activeFacilities} />
+            )}
 
-          {activeTab === 'compare' && (
-            <CompareTab districts={activeDistricts} />
-          )}
-        </div>
-      </main>
+            {activeTab === 'compare' && (
+              <CompareTab districts={activeDistricts} />
+            )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
