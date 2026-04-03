@@ -118,11 +118,6 @@ export default function MapControls({
                   checked={filters.showBubbles}
                   onChange={(v) => updateFilter('showBubbles', v)}
                 />
-                <CompactToggle
-                  label="District Labels"
-                  checked={filters.showLabels}
-                  onChange={(v) => updateFilter('showLabels', v)}
-                />
               </div>
             </div>
 
