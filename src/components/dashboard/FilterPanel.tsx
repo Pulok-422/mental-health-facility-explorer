@@ -98,8 +98,8 @@ export default function FilterPanel({
   );
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-y-auto p-4 pb-16">
+    <div className="h-full flex flex-col min-h-0 bg-background">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 pb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
             <Layers className="h-4 w-4 text-primary" />
@@ -218,15 +218,17 @@ export default function FilterPanel({
         </CollapsibleSection>
       </div>
 
-      <div className="px-4 pb-3 mt-auto">
-        <a
-          href="https://hasibulahmedpulok.vercel.app/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block text-left text-[10px] text-muted-foreground/80 hover:text-primary transition-colors"
-        >
-          Developed by Hasibul Ahmed Pulok
-        </a>
+      <div className="px-4 pb-4 pt-2">
+        <div className="border-t border-border/60 pt-3 text-center">
+          <a
+            href="https://hasibulahmedpulok.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block text-[10px] text-muted-foreground/75 hover:text-primary transition-colors"
+          >
+            Developed by Hasibul Ahmed Pulok
+          </a>
+        </div>
       </div>
     </div>
   );
