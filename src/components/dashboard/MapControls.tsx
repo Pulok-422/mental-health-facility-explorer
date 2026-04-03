@@ -51,35 +51,35 @@ export default function MapControls({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="h-11 w-11 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors"
+          className="h-10 w-10 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors"
           title="Map settings"
         >
-          <Layers3 className="h-5 w-5" />
+          <Layers3 className="h-4.5 w-4.5" />
         </button>
 
         <button
           type="button"
           onClick={onLocateUser}
-          className="h-11 w-11 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors"
+          className="h-10 w-10 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors"
           title="Locate me"
         >
-          <LocateFixed className="h-5 w-5" />
+          <LocateFixed className="h-4.5 w-4.5" />
         </button>
 
         <button
           type="button"
           onClick={onToggleFullscreen}
-          className="h-11 w-11 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors"
+          className="h-10 w-10 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors"
           title="Fullscreen"
         >
-          {isFullscreen ? <Minimize className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
+          {isFullscreen ? <Minimize className="h-4.5 w-4.5" /> : <Expand className="h-4.5 w-4.5" />}
         </button>
       </div>
 
       {open && (
-        <div className="w-[290px] rounded-2xl border border-border bg-card/95 shadow-xl backdrop-blur-md overflow-hidden map-controls-panel">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        <div className="w-[248px] rounded-xl border border-border bg-card/95 shadow-xl backdrop-blur-md overflow-hidden map-controls-panel">
+          <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
+            <div className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
               Map Settings
             </div>
             <button
@@ -91,34 +91,34 @@ export default function MapControls({
             </button>
           </div>
 
-          <div className="p-4 space-y-4">
+          <div className="p-3 space-y-3">
             <div>
-              <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-3">
+              <div className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase mb-2">
                 Map Layers
               </div>
 
-              <div className="space-y-3">
-                <ToggleRow
+              <div className="space-y-2">
+                <CompactToggle
                   label="Choropleth"
                   checked={filters.showChoropleth}
                   onChange={(v) => updateFilter('showChoropleth', v)}
                 />
-                <ToggleRow
+                <CompactToggle
                   label="Facility Markers"
                   checked={filters.showMarkers}
                   onChange={(v) => updateFilter('showMarkers', v)}
                 />
-                <ToggleRow
+                <CompactToggle
                   label="Heatmap"
                   checked={filters.showHeatmap}
                   onChange={(v) => updateFilter('showHeatmap', v)}
                 />
-                <ToggleRow
+                <CompactToggle
                   label="Bubble Overlay"
                   checked={filters.showBubbles}
                   onChange={(v) => updateFilter('showBubbles', v)}
                 />
-                <ToggleRow
+                <CompactToggle
                   label="District Labels"
                   checked={filters.showLabels}
                   onChange={(v) => updateFilter('showLabels', v)}
@@ -126,38 +126,38 @@ export default function MapControls({
               </div>
             </div>
 
-            <div className="border-t border-border pt-4">
-              <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-3">
+            <div className="border-t border-border pt-3">
+              <div className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase mb-2">
                 Choropleth Metric
               </div>
 
-              <div className="space-y-2">
-                <RadioRow
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
+                <CompactRadioRow
                   label="Total Facilities"
                   checked={filters.choroplethMetric === 'facilities'}
                   onChange={() => updateFilter('choroplethMetric', 'facilities')}
                 />
-                <RadioRow
+                <CompactRadioRow
                   label="Population"
                   checked={filters.choroplethMetric === 'population'}
                   onChange={() => updateFilter('choroplethMetric', 'population')}
                 />
-                <RadioRow
+                <CompactRadioRow
                   label="Facilities per 100K"
                   checked={filters.choroplethMetric === 'facilitiesPer100k'}
                   onChange={() => updateFilter('choroplethMetric', 'facilitiesPer100k')}
                 />
-                <RadioRow
+                <CompactRadioRow
                   label="Poverty Index"
                   checked={filters.choroplethMetric === 'povertyIndex'}
                   onChange={() => updateFilter('choroplethMetric', 'povertyIndex')}
                 />
-                <RadioRow
+                <CompactRadioRow
                   label="Literacy Rate"
                   checked={filters.choroplethMetric === 'literacyRate'}
                   onChange={() => updateFilter('choroplethMetric', 'literacyRate')}
                 />
-                <RadioRow
+                <CompactRadioRow
                   label="Urban Percent"
                   checked={filters.choroplethMetric === 'urbanPercent'}
                   onChange={() => updateFilter('choroplethMetric', 'urbanPercent')}
@@ -171,7 +171,7 @@ export default function MapControls({
   );
 }
 
-function ToggleRow({
+function CompactToggle({
   label,
   checked,
   onChange,
@@ -181,19 +181,19 @@ function ToggleRow({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <label className="flex items-center justify-between gap-3 cursor-pointer">
-      <span className="text-sm text-foreground">{label}</span>
+    <label className="flex items-center justify-between gap-2 cursor-pointer">
+      <span className="text-[13px] text-foreground leading-none">{label}</span>
       <button
         type="button"
         aria-pressed={checked}
         onClick={() => onChange(!checked)}
-        className={`relative h-7 w-11 rounded-full transition-colors ${
+        className={`relative h-6 w-10 rounded-full transition-colors shrink-0 ${
           checked ? 'bg-primary' : 'bg-muted'
         }`}
       >
         <span
-          className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-            checked ? 'translate-x-5' : 'translate-x-1'
+          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+            checked ? 'translate-x-4.5' : 'translate-x-0.5'
           }`}
         />
       </button>
@@ -201,7 +201,7 @@ function ToggleRow({
   );
 }
 
-function RadioRow({
+function CompactRadioRow({
   label,
   checked,
   onChange,
@@ -211,14 +211,16 @@ function RadioRow({
   onChange: () => void;
 }) {
   return (
-    <label className="flex items-center gap-3 cursor-pointer">
+    <label className="flex items-start gap-2 cursor-pointer min-w-0">
       <input
         type="radio"
         checked={checked}
         onChange={onChange}
-        className="h-4 w-4 accent-primary"
+        className="mt-[2px] h-3.5 w-3.5 accent-primary shrink-0"
       />
-      <span className="text-sm text-foreground">{label}</span>
+      <span className="text-[12px] text-foreground leading-[1.15] break-words">
+        {label}
+      </span>
     </label>
   );
 }
