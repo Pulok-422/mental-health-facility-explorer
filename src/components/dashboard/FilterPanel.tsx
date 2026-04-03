@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import type { Filters } from '@/types/dashboard';
+import type { Filters, ChoroplethMetric } from '@/types/dashboard';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, RotateCcw, MapPin, Layers, ChevronDown, ChevronRight } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Search, RotateCcw, MapPin, Layers, ChevronDown, ChevronRight, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface FilterPanelProps {
