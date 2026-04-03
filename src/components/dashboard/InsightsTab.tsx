@@ -21,17 +21,11 @@ const CHART_COLORS = {
   neutral: '#3b82f6',
   accent: '#14b8a6',
   warning: '#f59e0b',
-  muted: '#94a3b8',
-  criticalFill: '#fee2e2',
-  criticalStroke: '#ef4444',
-  selectedStroke: '#111827',
 };
 
 interface InsightsProps {
   districts: DistrictPop[];
   facilities: Facility[];
-  onDistrictSelect?: (districtName: string) => void;
-  selectedDistrict?: string | null;
 }
 
 function formatMillions(value: number) {
@@ -88,8 +82,6 @@ function RankingList({
   title,
   data,
   color,
-  onDistrictSelect,
-  selectedDistrict,
 }: {
   title: string;
   data: {
@@ -100,8 +92,6 @@ function RankingList({
     severityColor: string;
   }[];
   color: string;
-  onDistrictSelect?: (districtName: string) => void;
-  selectedDistrict?: string | null;
 }) {
   if (!data.length) return null;
 
@@ -112,19 +102,12 @@ function RankingList({
       <h3 className="mb-3 text-sm font-semibold text-foreground">{title}</h3>
       <div className="space-y-2">
         {data.map((d, i) => {
-          const isSelected = selectedDistrict === d.name;
           const widthPct = (d.value / maxValue) * 100;
 
           return (
-            <button
+            <div
               key={d.name}
-              type="button"
-              onClick={() => onDistrictSelect?.(d.name)}
-              className={`w-full rounded-lg border px-2.5 py-2 text-left transition ${
-                isSelected
-                  ? 'border-primary bg-primary/5 shadow-sm'
-                  : 'border-border bg-background hover:border-primary/40 hover:bg-muted/40'
-              }`}
+              className="w-full rounded-lg border border-border bg-background px-2.5 py-2"
             >
               <div className="mb-1.5 flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -161,7 +144,7 @@ function RankingList({
                   />
                 </div>
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
@@ -169,12 +152,7 @@ function RankingList({
   );
 }
 
-export default function InsightsTab({
-  districts,
-  facilities,
-  onDistrictSelect,
-  selectedDistrict,
-}: InsightsProps) {
+export default function InsightsTab({ districts, facilities }: InsightsProps) {
   const districtBars = useMemo(
     () =>
       [...districts]
@@ -262,7 +240,6 @@ export default function InsightsTab({
         poverty: d['Poverty Index'],
         facilities: d.total_facilities || 0,
         critical,
-        selected: selectedDistrict === (d.DIS_NAME || 'Unknown'),
       };
     });
 
@@ -272,11 +249,10 @@ export default function InsightsTab({
       .slice(0, 10)
       .map((d) => ({ ...d, label: d.name }));
 
-    const normal = points.filter((d) => !critical && !d.selected);
-    const selected = points.filter((d) => d.selected);
+    const normal = points.filter((d) => !d.critical);
 
-    return { all: points, critical: criticalSorted, normal, selected };
-  }, [districts, populationMedian, coverageMedian, selectedDistrict]);
+    return { all: points, critical: criticalSorted, normal };
+  }, [districts, populationMedian, coverageMedian]);
 
   const facilityTypeDist = useMemo(() => countBy(facilities, (f) => f.facility_type).slice(0, 10), [facilities]);
   const ownershipDist = useMemo(() => countBy(facilities, (f) => f.ownership), [facilities]);
@@ -291,9 +267,8 @@ export default function InsightsTab({
         per100k: +(d.facilitiesPer100k || 0).toFixed(2),
         facilities: d.total_facilities || 0,
         populationM: +(d.Population / 1e6).toFixed(2),
-        selected: selectedDistrict === (d.DIS_NAME || 'Unknown'),
       })),
-    [districts, selectedDistrict]
+    [districts]
   );
 
   return (
@@ -303,21 +278,17 @@ export default function InsightsTab({
           title="Top 10 Underserved Districts"
           data={underserved}
           color={CHART_COLORS.underserved}
-          onDistrictSelect={onDistrictSelect}
-          selectedDistrict={selectedDistrict}
         />
         <RankingList
           title="Top 10 Best Served Districts"
           data={bestServed}
           color={CHART_COLORS.served}
-          onDistrictSelect={onDistrictSelect}
-          selectedDistrict={selectedDistrict}
         />
       </div>
 
       <ChartCard
         title="Service Gap Analysis"
-        insight="Red points mark districts with above-median population and below-median facility coverage. Click a point or ranking item to sync this with the map."
+        insight="Red points mark districts with above-median population and below-median facility coverage."
         height={320}
       >
         <ResponsiveContainer>
@@ -369,25 +340,11 @@ export default function InsightsTab({
               }}
             />
 
-            <Scatter
-              data={facilityVsNeed.normal}
-              fill={CHART_COLORS.neutral}
-              onClick={(data: any) => onDistrictSelect?.(data?.name)}
-            />
+            <Scatter data={facilityVsNeed.normal} fill={CHART_COLORS.neutral} />
 
-            <Scatter
-              data={facilityVsNeed.critical}
-              fill={CHART_COLORS.underserved}
-              onClick={(data: any) => onDistrictSelect?.(data?.name)}
-            >
+            <Scatter data={facilityVsNeed.critical} fill={CHART_COLORS.underserved}>
               <LabelList dataKey="label" position="top" fontSize={10} />
             </Scatter>
-
-            <Scatter
-              data={facilityVsNeed.selected}
-              fill={CHART_COLORS.warning}
-              onClick={(data: any) => onDistrictSelect?.(data?.name)}
-            />
           </ScatterChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -395,14 +352,24 @@ export default function InsightsTab({
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         <ChartCard
           title="Facilities by District (Top 15)"
-          insight="Shows where facilities are concentrated. Click a bar to focus the same district across the dashboard and map."
+          insight="Shows where facilities are concentrated across districts."
           height={290}
         >
           <ResponsiveContainer>
             <BarChart data={districtBars} margin={{ left: 0, right: 10, top: 5, bottom: 45 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="shortName" tick={{ fontSize: 9 }} angle={-35} textAnchor="end" interval={0} height={60} />
-              <YAxis tick={{ fontSize: 10 }} label={{ value: 'Count', angle: -90, position: 'insideLeft', fontSize: 10 }} />
+              <XAxis
+                dataKey="shortName"
+                tick={{ fontSize: 9 }}
+                angle={-35}
+                textAnchor="end"
+                interval={0}
+                height={60}
+              />
+              <YAxis
+                tick={{ fontSize: 10 }}
+                label={{ value: 'Count', angle: -90, position: 'insideLeft', fontSize: 10 }}
+              />
               <Tooltip
                 content={({ active, payload }) => {
                   if (!active || !payload?.length) return null;
@@ -416,12 +383,9 @@ export default function InsightsTab({
                   );
                 }}
               />
-              <Bar dataKey="facilities" radius={[6, 6, 0, 0]} onClick={(data: any) => onDistrictSelect?.(data?.name)}>
+              <Bar dataKey="facilities" radius={[6, 6, 0, 0]}>
                 {districtBars.map((entry) => (
-                  <Cell
-                    key={entry.name}
-                    fill={selectedDistrict === entry.name ? CHART_COLORS.warning : CHART_COLORS.neutral}
-                  />
+                  <Cell key={entry.name} fill={CHART_COLORS.neutral} />
                 ))}
               </Bar>
             </BarChart>
@@ -477,7 +441,10 @@ export default function InsightsTab({
             <BarChart data={costDist} margin={{ left: 0, right: 10, top: 5, bottom: 25 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} label={{ value: 'Count', angle: -90, position: 'insideLeft', fontSize: 10 }} />
+              <YAxis
+                tick={{ fontSize: 10 }}
+                label={{ value: 'Count', angle: -90, position: 'insideLeft', fontSize: 10 }}
+              />
               <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
               <Bar dataKey="value" fill={CHART_COLORS.accent} radius={[6, 6, 0, 0]} />
             </BarChart>
@@ -489,7 +456,10 @@ export default function InsightsTab({
             <BarChart data={categoryDist} margin={{ left: 0, right: 10, top: 5, bottom: 40 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={55} />
-              <YAxis tick={{ fontSize: 10 }} label={{ value: 'Count', angle: -90, position: 'insideLeft', fontSize: 10 }} />
+              <YAxis
+                tick={{ fontSize: 10 }}
+                label={{ value: 'Count', angle: -90, position: 'insideLeft', fontSize: 10 }}
+              />
               <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
               <Bar dataKey="value" fill={CHART_COLORS.neutral} radius={[6, 6, 0, 0]} />
             </BarChart>
@@ -498,7 +468,7 @@ export default function InsightsTab({
 
         <ChartCard
           title="Poverty Index vs Facilities Per 100K"
-          insight="Use this to check whether poorer districts also face lower service density. Click a point to sync with the map."
+          insight="Use this to check whether poorer districts also face lower service density."
           height={280}
         >
           <ResponsiveContainer>
@@ -533,16 +503,7 @@ export default function InsightsTab({
                   );
                 }}
               />
-              <Scatter
-                data={povertyScatter.filter((d) => !d.selected)}
-                fill={CHART_COLORS.neutral}
-                onClick={(data: any) => onDistrictSelect?.(data?.name)}
-              />
-              <Scatter
-                data={povertyScatter.filter((d) => d.selected)}
-                fill={CHART_COLORS.warning}
-                onClick={(data: any) => onDistrictSelect?.(data?.name)}
-              />
+              <Scatter data={povertyScatter} fill={CHART_COLORS.neutral} />
             </ScatterChart>
           </ResponsiveContainer>
         </ChartCard>
