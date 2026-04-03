@@ -927,20 +927,33 @@ export default function DistrictMap({
         </button>
       </div>
 
-      {filters.showChoropleth && (
+      {filters.showChoropleth && breaks.length > 0 && (
         <div className="map-legend-panel">
-          <div className="map-legend-title">Legend</div>
-          <div className="map-legend-scale">
-            {palette.slice(0, 5).map((color, idx) => (
-              <div key={idx} style={{ background: color }} />
-            ))}
+          <div className="map-legend-title">
+            {filters.choroplethMetric === 'facilities' ? 'Total Facilities' :
+             filters.choroplethMetric === 'facilitiesPer100k' ? 'Per 100K' :
+             filters.choroplethMetric === 'povertyIndex' ? 'Poverty Index' :
+             filters.choroplethMetric === 'literacyRate' ? 'Literacy Rate' :
+             filters.choroplethMetric === 'urbanPercent' ? 'Urban %' :
+             filters.choroplethMetric === 'population' ? 'Population' : 'Legend'}
           </div>
-          <div className="map-legend-labels">
-            <span>Low ({metricRange.min.toLocaleString()})</span>
-            <span>High ({metricRange.max.toLocaleString()})</span>
-          </div>
-          <div className="map-legend-breaks">
-            Breaks: {breaks.map((b) => Number.isFinite(b) ? b.toLocaleString() : b).join(' · ')}
+          <div className="space-y-1">
+            {(() => {
+              const labels = ['Low', 'Moderate-Low', 'Moderate', 'Moderate-High', 'High'];
+              const ranges = palette.map((color, idx) => {
+                const lo = idx === 0 ? metricRange.min : breaks[idx - 1];
+                const hi = idx < breaks.length ? breaks[idx] : metricRange.max;
+                const fmt = (v: number) => v > 10000 ? (v / 1e6).toFixed(2) + 'M' : Number.isFinite(v) ? v.toFixed(1) : '0';
+                return (
+                  <div key={idx} className="flex items-center gap-2 text-[11px]">
+                    <div className="w-4 h-3 rounded-sm flex-shrink-0" style={{ background: color }} />
+                    <span className="text-foreground font-medium">{labels[idx]}</span>
+                    <span className="text-muted-foreground ml-auto">({fmt(lo)}–{fmt(hi)})</span>
+                  </div>
+                );
+              });
+              return ranges;
+            })()}
           </div>
         </div>
       )}
