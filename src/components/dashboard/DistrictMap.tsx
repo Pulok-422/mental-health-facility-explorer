@@ -408,7 +408,7 @@ export default function DistrictMap({
           layer.bindTooltip(
             `
             <div class="district-name">${name}</div>
-            <div class="tooltip-row"><span>Status</span><span class="value">No data</span></div>
+            <div class="tooltip-row"><span>Status</span><span class="value">No facility</span></div>
           `,
             { className: 'district-tooltip', sticky: true }
           );
@@ -827,7 +827,7 @@ export default function DistrictMap({
                       className="w-4 h-3 rounded-sm border border-black/10 shrink-0"
                       style={{ backgroundColor: NO_DATA_FILL }}
                     />
-                    <span className="text-foreground">No data</span>
+                    <span className="text-foreground">No facility</span>
                   </div>
                 </>
               );
