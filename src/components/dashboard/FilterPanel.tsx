@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import type { Filters } from '@/types/dashboard';
+import type { Filters, ChoroplethMetric } from '@/types/dashboard';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, RotateCcw, MapPin, Layers, ChevronDown, ChevronRight } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Search, RotateCcw, MapPin, Layers, ChevronDown, ChevronRight, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface FilterPanelProps {
@@ -158,6 +159,51 @@ export default function FilterPanel({
       <CollapsibleSection title="Cost">
         <CheckboxFilter options={filterOptions.cost} selected={filters.cost} onChange={v => updateFilter('cost', v)} />
       </CollapsibleSection>
+
+      {/* Map Display Layers */}
+      <CollapsibleSection title="Map Layers" icon={<Eye className="h-3 w-3" />} defaultOpen>
+        <ToggleRow label="Choropleth" checked={filters.showChoropleth} onChange={v => updateFilter('showChoropleth', v)} />
+        <ToggleRow label="Facility Markers" checked={filters.showMarkers} onChange={v => updateFilter('showMarkers', v)} />
+        <ToggleRow label="Heatmap" checked={filters.showHeatmap} onChange={v => updateFilter('showHeatmap', v)} />
+        <ToggleRow label="Bubble Overlay" checked={filters.showBubbles} onChange={v => updateFilter('showBubbles', v)} />
+        <ToggleRow label="District Labels" checked={filters.showLabels} onChange={v => updateFilter('showLabels', v)} />
+      </CollapsibleSection>
+
+      {/* Choropleth Metric */}
+      {filters.showChoropleth && (
+        <CollapsibleSection title="Choropleth Metric" defaultOpen>
+          {CHOROPLETH_OPTIONS.map(m => (
+            <label key={m.key} className="flex items-center gap-2 py-0.5 px-1 rounded hover:bg-muted/50 cursor-pointer text-xs text-foreground">
+              <input
+                type="radio"
+                name="choro-sidebar"
+                checked={filters.choroplethMetric === m.key}
+                onChange={() => updateFilter('choroplethMetric', m.key)}
+                className="h-3 w-3 accent-primary"
+              />
+              <span>{m.label}</span>
+            </label>
+          ))}
+        </CollapsibleSection>
+      )}
+    </div>
+  );
+}
+
+const CHOROPLETH_OPTIONS: { key: ChoroplethMetric; label: string }[] = [
+  { key: 'facilities', label: 'Total Facilities' },
+  { key: 'population', label: 'Population' },
+  { key: 'facilitiesPer100k', label: 'Facilities per 100K' },
+  { key: 'povertyIndex', label: 'Poverty Index' },
+  { key: 'literacyRate', label: 'Literacy Rate' },
+  { key: 'urbanPercent', label: 'Urban Percent' },
+];
+
+function ToggleRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between py-0.5 px-1">
+      <span className="text-xs text-foreground">{label}</span>
+      <Switch checked={checked} onCheckedChange={onChange} className="scale-75" />
     </div>
   );
 }

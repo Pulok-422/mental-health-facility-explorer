@@ -904,22 +904,6 @@ export default function DistrictMap({
         </button>
       </div>
 
-      <div className="map-toggle-stack">
-        <button
-          type="button"
-          className={`map-mini-toggle ${filters.showMarkers ? 'active' : ''}`}
-          onClick={() => updateFilter('showMarkers', !filters.showMarkers)}
-        >
-          Markers
-        </button>
-        <button
-          type="button"
-          className={`map-mini-toggle ${filters.showHeatmap ? 'active' : ''}`}
-          onClick={() => updateFilter('showHeatmap', !filters.showHeatmap)}
-        >
-          Heatmap
-        </button>
-      </div>
 
       {filters.showChoropleth && breaks.length > 0 && (
         <div className="map-legend-panel">
