@@ -98,8 +98,11 @@ export default function FilterPanel({
   );
 
   return (
-    <div className="h-full overflow-y-auto p-4 space-y-0 flex flex-col justify-between">
-      <div>
+    <div className="h-full flex flex-col">
+
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto p-4">
+
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
             <Layers className="h-4 w-4 text-primary" />
@@ -216,19 +219,21 @@ export default function FilterPanel({
             onChange={(v) => updateFilter('cost', v)}
           />
         </CollapsibleSection>
+
       </div>
 
       {/* Footer */}
-      <div className="pt-3 mt-3 border-t border-border text-center">
+      <div className="px-4 py-2 border-t border-border/60 text-center bg-background">
         <a
           href="https://hasibulahmedpulok.vercel.app/"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-muted-foreground hover:text-primary transition-colors"
+          className="text-[10px] text-muted-foreground/80 hover:text-primary transition-colors"
         >
           Developed by Hasibul Ahmed Pulok
         </a>
       </div>
+
     </div>
   );
 }
