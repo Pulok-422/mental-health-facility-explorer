@@ -1,15 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { Filters, ChoroplethMetric } from '@/types/dashboard';
-import {
-  Layers3,
-  ChevronDown,
-  LocateFixed,
-  RefreshCcw,
-  Expand,
-  Minimize,
-  MapPinned,
-  Focus,
-} from 'lucide-react';
+import { Layers3, ChevronDown, LocateFixed, Expand, Minimize } from 'lucide-react';
 
 interface MapControlsProps {
   filters: Filters;
@@ -45,84 +36,18 @@ export function getMetricPalette(metric: ChoroplethMetric): string[] {
   }
 }
 
-function metricLabel(metric: ChoroplethMetric) {
-  switch (metric) {
-    case 'facilities':
-      return 'Total Facilities';
-    case 'population':
-      return 'Population';
-    case 'facilitiesPer100k':
-      return 'Facilities per 100K';
-    case 'povertyIndex':
-      return 'Poverty Index';
-    case 'literacyRate':
-      return 'Literacy Rate';
-    case 'urbanPercent':
-      return 'Urban Percent';
-    default:
-      return 'Metric';
-  }
-}
-
-function formatRangeValue(value: number, metric: ChoroplethMetric) {
-  if (!Number.isFinite(value)) return '0';
-
-  if (metric === 'population') {
-    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-    if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
-    return value.toFixed(0);
-  }
-
-  if (metric === 'literacyRate' || metric === 'urbanPercent') {
-    return `${value.toFixed(1)}%`;
-  }
-
-  return value.toFixed(2).replace(/\.00$/, '');
-}
-
 export default function MapControls({
   filters,
   updateFilter,
-  basemap,
-  setBasemap,
-  onResetView,
-  onFitBangladesh,
-  onFitSelected,
   onLocateUser,
   onToggleFullscreen,
   isFullscreen,
-  hasSelection,
-  metricRange,
-  getQuantileBreaks,
 }: MapControlsProps) {
   const [open, setOpen] = useState(false);
 
-  const palette = useMemo(
-    () => getMetricPalette(filters.choroplethMetric),
-    [filters.choroplethMetric]
-  );
-
-  const breaks = useMemo(() => getQuantileBreaks(), [getQuantileBreaks]);
-
-  const ranges = useMemo(() => {
-    const labels = ['Low', 'Moderate-Low', 'Moderate', 'Moderate-High', 'High'];
-
-    return palette.map((color, idx) => {
-      const lo = idx === 0 ? metricRange.min : breaks[idx - 1];
-      const hi = idx < breaks.length ? breaks[idx] : metricRange.max;
-
-      return {
-        color,
-        label: labels[idx],
-        lo,
-        hi,
-      };
-    });
-  }, [palette, breaks, metricRange]);
-
   return (
     <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2">
-      <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
@@ -143,35 +68,6 @@ export default function MapControls({
 
         <button
           type="button"
-          onClick={onFitBangladesh}
-          className="h-11 w-11 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors"
-          title="Fit Bangladesh"
-        >
-          <MapPinned className="h-5 w-5" />
-        </button>
-
-        {hasSelection && (
-          <button
-            type="button"
-            onClick={onFitSelected}
-            className="h-11 w-11 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors"
-            title="Fit selected district"
-          >
-            <Focus className="h-5 w-5" />
-          </button>
-        )}
-
-        <button
-          type="button"
-          onClick={onResetView}
-          className="h-11 w-11 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors"
-          title="Reset view"
-        >
-          <RefreshCcw className="h-5 w-5" />
-        </button>
-
-        <button
-          type="button"
           onClick={onToggleFullscreen}
           className="h-11 w-11 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors"
           title="Fullscreen"
@@ -181,7 +77,7 @@ export default function MapControls({
       </div>
 
       {open && (
-        <div className="w-[290px] rounded-2xl border border-border bg-card/95 shadow-xl backdrop-blur-md overflow-hidden">
+        <div className="w-[290px] rounded-2xl border border-border bg-card/95 shadow-xl backdrop-blur-md overflow-hidden map-controls-panel">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               Map Settings
@@ -197,28 +93,6 @@ export default function MapControls({
 
           <div className="p-4 space-y-4">
             <div>
-              <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-3">
-                Basemap
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {(['light', 'street', 'satellite'] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => setBasemap(mode)}
-                    className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
-                      basemap === mode
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-background text-foreground border-border hover:bg-muted'
-                    }`}
-                  >
-                    {mode === 'light' ? 'Light' : mode === 'street' ? 'Street' : 'Satellite'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="border-t border-border pt-4">
               <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-3">
                 Map Layers
               </div>
@@ -290,34 +164,6 @@ export default function MapControls({
                 />
               </div>
             </div>
-
-            {filters.showChoropleth && ranges.length > 0 && (
-              <div className="border-t border-border pt-4">
-                <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-3">
-                  Legend
-                </div>
-
-                <div className="mb-3 text-sm font-medium text-foreground">
-                  {metricLabel(filters.choroplethMetric)}
-                </div>
-
-                <div className="space-y-2">
-                  {ranges.map((item) => (
-                    <div key={item.label} className="flex items-center gap-2 text-[11px]">
-                      <div
-                        className="w-4 h-3 rounded-sm border border-black/10 shrink-0"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="text-foreground">{item.label}</span>
-                      <span className="ml-auto text-muted-foreground">
-                        {formatRangeValue(item.lo, filters.choroplethMetric)} to{' '}
-                        {formatRangeValue(item.hi, filters.choroplethMetric)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
