@@ -1,16 +1,21 @@
-import { useState } from 'react';
-import type { Filters, ChoroplethMetric, BubbleMetric } from '@/types/dashboard';
-import { Switch } from '@/components/ui/switch';
+import { useMemo, useState } from 'react';
+import type { Filters, ChoroplethMetric } from '@/types/dashboard';
 import {
-  Settings2, ChevronDown, ChevronUp, Crosshair,
-  Maximize2, RotateCcw, Layers, MapPin,
+  Layers3,
+  ChevronDown,
+  LocateFixed,
+  RefreshCcw,
+  Expand,
+  Minimize,
+  MapPinned,
+  Focus,
 } from 'lucide-react';
 
 interface MapControlsProps {
   filters: Filters;
   updateFilter: <K extends keyof Filters>(key: K, value: Filters[K]) => void;
   basemap: 'light' | 'street' | 'satellite';
-  setBasemap: (v: 'light' | 'street' | 'satellite') => void;
+  setBasemap: (value: 'light' | 'street' | 'satellite') => void;
   onResetView: () => void;
   onFitBangladesh: () => void;
   onFitSelected: () => void;
@@ -22,192 +27,352 @@ interface MapControlsProps {
   getQuantileBreaks: () => number[];
 }
 
-const METRIC_OPTIONS: { key: ChoroplethMetric; label: string }[] = [
-  { key: 'facilities', label: 'Total Facilities' },
-  { key: 'population', label: 'Population' },
-  { key: 'facilitiesPer100k', label: 'Facilities per 100K' },
-  { key: 'povertyIndex', label: 'Poverty Index' },
-  { key: 'literacyRate', label: 'Literacy Rate' },
-  { key: 'urbanPercent', label: 'Urban Percent' },
-];
-
-const BUBBLE_OPTIONS: { key: BubbleMetric; label: string }[] = [
-  { key: 'facilities', label: 'Total Facilities' },
-  { key: 'population', label: 'Population' },
-  { key: 'facilitiesPer100k', label: 'Per 100K' },
-];
-
-const PALETTES: Record<string, string[]> = {
-  facilities: ['#deebf7', '#9ecae1', '#6baed6', '#3182bd', '#08519c'],
-  population: ['#deebf7', '#9ecae1', '#6baed6', '#3182bd', '#08519c'],
-  facilitiesPer100k: ['#deebf7', '#9ecae1', '#6baed6', '#3182bd', '#08519c'],
-  populationPerFacility: ['#fff7bc', '#fee391', '#fec44f', '#fe9929', '#d95f0e'],
-  povertyIndex: ['#f2f0f7', '#cbc9e2', '#9e9ac8', '#756bb1', '#54278f'],
-  literacyRate: ['#deebf7', '#9ecae1', '#6baed6', '#3182bd', '#08519c'],
-  urbanPercent: ['#deebf7', '#9ecae1', '#6baed6', '#3182bd', '#08519c'],
-};
-
 export function getMetricPalette(metric: ChoroplethMetric): string[] {
-  return PALETTES[metric] || PALETTES.facilities;
+  switch (metric) {
+    case 'povertyIndex':
+      return ['#ecfdf5', '#bbf7d0', '#86efac', '#4ade80', '#16a34a'];
+    case 'literacyRate':
+      return ['#eff6ff', '#bfdbfe', '#93c5fd', '#60a5fa', '#2563eb'];
+    case 'urbanPercent':
+      return ['#f5f3ff', '#ddd6fe', '#c4b5fd', '#8b5cf6', '#6d28d9'];
+    case 'population':
+      return ['#fff7ed', '#fed7aa', '#fdba74', '#fb923c', '#ea580c'];
+    case 'facilitiesPer100k':
+      return ['#eff6ff', '#bfdbfe', '#93c5fd', '#60a5fa', '#1d4ed8'];
+    case 'facilities':
+    default:
+      return ['#eff6ff', '#bfdbfe', '#93c5fd', '#60a5fa', '#2563eb'];
+  }
+}
+
+function metricLabel(metric: ChoroplethMetric) {
+  switch (metric) {
+    case 'facilities':
+      return 'Total Facilities';
+    case 'population':
+      return 'Population';
+    case 'facilitiesPer100k':
+      return 'Facilities per 100K';
+    case 'povertyIndex':
+      return 'Poverty Index';
+    case 'literacyRate':
+      return 'Literacy Rate';
+    case 'urbanPercent':
+      return 'Urban Percent';
+    default:
+      return 'Metric';
+  }
+}
+
+function formatRangeValue(value: number, metric: ChoroplethMetric) {
+  if (!Number.isFinite(value)) return '0';
+
+  if (metric === 'population') {
+    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+    if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
+    return value.toFixed(0);
+  }
+
+  if (metric === 'literacyRate' || metric === 'urbanPercent') {
+    return `${value.toFixed(1)}%`;
+  }
+
+  return value.toFixed(2).replace(/\.00$/, '');
 }
 
 export default function MapControls({
-  filters, updateFilter, basemap, setBasemap,
-  onResetView, onFitBangladesh, onFitSelected, onLocateUser,
-  onToggleFullscreen, isFullscreen, hasSelection,
-  metricRange, getQuantileBreaks,
+  filters,
+  updateFilter,
+  basemap,
+  setBasemap,
+  onResetView,
+  onFitBangladesh,
+  onFitSelected,
+  onLocateUser,
+  onToggleFullscreen,
+  isFullscreen,
+  hasSelection,
+  metricRange,
+  getQuantileBreaks,
 }: MapControlsProps) {
-  const [open, setOpen] = useState(true);
-  const palette = getMetricPalette(filters.choroplethMetric);
-  const breaks = getQuantileBreaks();
+  const [open, setOpen] = useState(false);
+
+  const palette = useMemo(
+    () => getMetricPalette(filters.choroplethMetric),
+    [filters.choroplethMetric]
+  );
+
+  const breaks = useMemo(() => getQuantileBreaks(), [getQuantileBreaks]);
+
+  const ranges = useMemo(() => {
+    const labels = ['Low', 'Moderate-Low', 'Moderate', 'Moderate-High', 'High'];
+
+    return palette.map((color, idx) => {
+      const lo = idx === 0 ? metricRange.min : breaks[idx - 1];
+      const hi = idx < breaks.length ? breaks[idx] : metricRange.max;
+
+      return {
+        color,
+        label: labels[idx],
+        lo,
+        hi,
+      };
+    });
+  }, [palette, breaks, metricRange]);
 
   return (
-    <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-2 items-end">
-      {/* Quick action buttons row */}
-      <div className="flex gap-1">
-        <ActionBtn title="My Location" onClick={onLocateUser}><Crosshair className="h-3.5 w-3.5" /></ActionBtn>
-        <ActionBtn title="Fit Bangladesh" onClick={onFitBangladesh}><MapPin className="h-3.5 w-3.5" /></ActionBtn>
-        {hasSelection && (
-          <ActionBtn title="Fit Selected" onClick={onFitSelected}><RotateCcw className="h-3.5 w-3.5" /></ActionBtn>
-        )}
-        <ActionBtn title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'} onClick={onToggleFullscreen}>
-          <Maximize2 className="h-3.5 w-3.5" />
-        </ActionBtn>
+    <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2">
+      <div className="flex flex-col gap-2">
         <button
-          onClick={() => setOpen(!open)}
-          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-card/90 backdrop-blur-sm border border-border shadow-md hover:bg-card transition-colors text-foreground"
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="h-11 w-11 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors"
+          title="Map settings"
         >
-          <Settings2 className="h-3.5 w-3.5" />
-          {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          <Layers3 className="h-5 w-5" />
+        </button>
+
+        <button
+          type="button"
+          onClick={onLocateUser}
+          className="h-11 w-11 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors"
+          title="Locate me"
+        >
+          <LocateFixed className="h-5 w-5" />
+        </button>
+
+        <button
+          type="button"
+          onClick={onFitBangladesh}
+          className="h-11 w-11 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors"
+          title="Fit Bangladesh"
+        >
+          <MapPinned className="h-5 w-5" />
+        </button>
+
+        {hasSelection && (
+          <button
+            type="button"
+            onClick={onFitSelected}
+            className="h-11 w-11 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors"
+            title="Fit selected district"
+          >
+            <Focus className="h-5 w-5" />
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={onResetView}
+          className="h-11 w-11 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors"
+          title="Reset view"
+        >
+          <RefreshCcw className="h-5 w-5" />
+        </button>
+
+        <button
+          type="button"
+          onClick={onToggleFullscreen}
+          className="h-11 w-11 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors"
+          title="Fullscreen"
+        >
+          {isFullscreen ? <Minimize className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
         </button>
       </div>
 
-      {/* Settings panel */}
       {open && (
-        <div className="w-56 bg-card/95 backdrop-blur-md border border-border rounded-xl shadow-lg p-3 space-y-3 text-xs max-h-[70vh] overflow-y-auto">
-          {/* Layers */}
-          <Section title="Layers" icon={<Layers className="h-3 w-3" />}>
-            <ToggleRow label="Choropleth" checked={filters.showChoropleth} onChange={v => updateFilter('showChoropleth', v)} />
-            <ToggleRow label="Facility Markers" checked={filters.showMarkers} onChange={v => updateFilter('showMarkers', v)} />
-            <ToggleRow label="Heatmap" checked={filters.showHeatmap} onChange={v => updateFilter('showHeatmap', v)} />
-            <ToggleRow label="Bubble Overlay" checked={filters.showBubbles} onChange={v => updateFilter('showBubbles', v)} />
-            <ToggleRow label="District Labels" checked={filters.showLabels} onChange={v => updateFilter('showLabels', v)} />
-          </Section>
-
-          {/* Choropleth metric */}
-          {filters.showChoropleth && (
-            <Section title="Choropleth Metric">
-              {METRIC_OPTIONS.map(m => (
-                <label key={m.key} className="flex items-center gap-2 py-0.5 cursor-pointer text-foreground">
-                  <input
-                    type="radio"
-                    name="choro"
-                    checked={filters.choroplethMetric === m.key}
-                    onChange={() => updateFilter('choroplethMetric', m.key)}
-                    className="h-3 w-3 accent-[hsl(210,80%,50%)]"
-                  />
-                  <span>{m.label}</span>
-                </label>
-              ))}
-            </Section>
-          )}
-
-          {/* Bubble metric */}
-          {filters.showBubbles && (
-            <Section title="Bubble Metric">
-              {BUBBLE_OPTIONS.map(m => (
-                <label key={m.key} className="flex items-center gap-2 py-0.5 cursor-pointer text-foreground">
-                  <input
-                    type="radio"
-                    name="bubble"
-                    checked={filters.bubbleMetric === m.key}
-                    onChange={() => updateFilter('bubbleMetric', m.key)}
-                    className="h-3 w-3 accent-[hsl(210,80%,50%)]"
-                  />
-                  <span>{m.label}</span>
-                </label>
-              ))}
-            </Section>
-          )}
-
-          {/* Basemap */}
-          <Section title="Basemap">
-            <div className="flex gap-1">
-              {(['light', 'street', 'satellite'] as const).map(b => (
-                <button
-                  key={b}
-                  onClick={() => setBasemap(b)}
-                  className={`flex-1 px-2 py-1 rounded-md font-medium transition-colors ${
-                    basemap === b ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:bg-muted'
-                  }`}
-                >
-                  {b.charAt(0).toUpperCase() + b.slice(1)}
-                </button>
-              ))}
+        <div className="w-[290px] rounded-2xl border border-border bg-card/95 shadow-xl backdrop-blur-md overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              Map Settings
             </div>
-          </Section>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </button>
+          </div>
 
-          {/* Legend */}
-          {filters.showChoropleth && (
-            <Section title="Legend">
-              <div className="space-y-1">
-                <div className="flex h-3 rounded overflow-hidden">
-                  {palette.map((c, i) => (
-                    <div key={i} className="flex-1" style={{ background: c }} />
+          <div className="p-4 space-y-4">
+            <div>
+              <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-3">
+                Basemap
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {(['light', 'street', 'satellite'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setBasemap(mode)}
+                    className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                      basemap === mode
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background text-foreground border-border hover:bg-muted'
+                    }`}
+                  >
+                    {mode === 'light' ? 'Light' : mode === 'street' ? 'Street' : 'Satellite'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-3">
+                Map Layers
+              </div>
+
+              <div className="space-y-3">
+                <ToggleRow
+                  label="Choropleth"
+                  checked={filters.showChoropleth}
+                  onChange={(v) => updateFilter('showChoropleth', v)}
+                />
+                <ToggleRow
+                  label="Facility Markers"
+                  checked={filters.showMarkers}
+                  onChange={(v) => updateFilter('showMarkers', v)}
+                />
+                <ToggleRow
+                  label="Heatmap"
+                  checked={filters.showHeatmap}
+                  onChange={(v) => updateFilter('showHeatmap', v)}
+                />
+                <ToggleRow
+                  label="Bubble Overlay"
+                  checked={filters.showBubbles}
+                  onChange={(v) => updateFilter('showBubbles', v)}
+                />
+                <ToggleRow
+                  label="District Labels"
+                  checked={filters.showLabels}
+                  onChange={(v) => updateFilter('showLabels', v)}
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-3">
+                Choropleth Metric
+              </div>
+
+              <div className="space-y-2">
+                <RadioRow
+                  label="Total Facilities"
+                  checked={filters.choroplethMetric === 'facilities'}
+                  onChange={() => updateFilter('choroplethMetric', 'facilities')}
+                />
+                <RadioRow
+                  label="Population"
+                  checked={filters.choroplethMetric === 'population'}
+                  onChange={() => updateFilter('choroplethMetric', 'population')}
+                />
+                <RadioRow
+                  label="Facilities per 100K"
+                  checked={filters.choroplethMetric === 'facilitiesPer100k'}
+                  onChange={() => updateFilter('choroplethMetric', 'facilitiesPer100k')}
+                />
+                <RadioRow
+                  label="Poverty Index"
+                  checked={filters.choroplethMetric === 'povertyIndex'}
+                  onChange={() => updateFilter('choroplethMetric', 'povertyIndex')}
+                />
+                <RadioRow
+                  label="Literacy Rate"
+                  checked={filters.choroplethMetric === 'literacyRate'}
+                  onChange={() => updateFilter('choroplethMetric', 'literacyRate')}
+                />
+                <RadioRow
+                  label="Urban Percent"
+                  checked={filters.choroplethMetric === 'urbanPercent'}
+                  onChange={() => updateFilter('choroplethMetric', 'urbanPercent')}
+                />
+              </div>
+            </div>
+
+            {filters.showChoropleth && ranges.length > 0 && (
+              <div className="border-t border-border pt-4">
+                <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-3">
+                  Legend
+                </div>
+
+                <div className="mb-3 text-sm font-medium text-foreground">
+                  {metricLabel(filters.choroplethMetric)}
+                </div>
+
+                <div className="space-y-2">
+                  {ranges.map((item) => (
+                    <div key={item.label} className="flex items-center gap-2 text-[11px]">
+                      <div
+                        className="w-4 h-3 rounded-sm border border-black/10 shrink-0"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="text-foreground">{item.label}</span>
+                      <span className="ml-auto text-muted-foreground">
+                        {formatRangeValue(item.lo, filters.choroplethMetric)} to{' '}
+                        {formatRangeValue(item.hi, filters.choroplethMetric)}
+                      </span>
+                    </div>
                   ))}
                 </div>
-                <div className="flex justify-between text-[10px] text-muted-foreground">
-                  <span>Low ({metricRange.min.toLocaleString()})</span>
-                  <span>High ({metricRange.max.toLocaleString()})</span>
-                </div>
-                <div className="text-[10px] text-muted-foreground">
-                  Breaks: {breaks.map(b => b.toLocaleString()).join(' · ')}
-                </div>
               </div>
-            </Section>
-          )}
-
-          {/* Reset */}
-          <button
-            onClick={onResetView}
-            className="w-full py-1.5 rounded-lg bg-secondary text-muted-foreground hover:bg-muted transition-colors font-medium"
-          >
-            Reset Map View
-          </button>
+            )}
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-function Section({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
+function ToggleRow({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-1.5 font-semibold text-muted-foreground uppercase tracking-wider text-[10px]">
-        {icon}{title}
-      </div>
-      <div className="space-y-1">{children}</div>
-    </div>
+    <label className="flex items-center justify-between gap-3 cursor-pointer">
+      <span className="text-sm text-foreground">{label}</span>
+      <button
+        type="button"
+        aria-pressed={checked}
+        onClick={() => onChange(!checked)}
+        className={`relative h-7 w-11 rounded-full transition-colors ${
+          checked ? 'bg-primary' : 'bg-muted'
+        }`}
+      >
+        <span
+          className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+            checked ? 'translate-x-5' : 'translate-x-1'
+          }`}
+        />
+      </button>
+    </label>
   );
 }
 
-function ToggleRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+function RadioRow({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: () => void;
+}) {
   return (
-    <div className="flex items-center justify-between py-0.5">
-      <span className="text-foreground">{label}</span>
-      <Switch checked={checked} onCheckedChange={onChange} className="scale-75" />
-    </div>
-  );
-}
-
-function ActionBtn({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      title={title}
-      onClick={onClick}
-      className="p-2 rounded-lg bg-card/90 backdrop-blur-sm border border-border shadow-md hover:bg-card transition-colors text-foreground"
-    >
-      {children}
-    </button>
+    <label className="flex items-center gap-3 cursor-pointer">
+      <input
+        type="radio"
+        checked={checked}
+        onChange={onChange}
+        className="h-4 w-4 accent-primary"
+      />
+      <span className="text-sm text-foreground">{label}</span>
+    </label>
   );
 }
