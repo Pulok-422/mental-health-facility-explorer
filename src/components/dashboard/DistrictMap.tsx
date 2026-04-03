@@ -10,7 +10,7 @@ import DistrictInfoCard from './DistrictInfoCard';
 import MapControls, { getMetricPalette } from './MapControls';
 
 const BANGLADESH_CENTER: [number, number] = [23.7, 90.35];
-const BANGLADESH_ZOOM = 11;
+const BANGLADESH_ZOOM = 8.5;
 const BANGLADESH_BOUNDS: L.LatLngBoundsExpression = [[20.5, 88.0], [26.7, 92.7]];
 const NO_DATA_FILL = '#9ca3af';
 
@@ -341,7 +341,7 @@ export default function DistrictMap({
     }).addTo(map);
 
     map.fitBounds(BANGLADESH_BOUNDS, { padding: [10, 10] });
-    map.setZoom(11);
+    map.setZoom(BANGLADESH_ZOOM);
 
     mapRef.current = map;
 
@@ -371,7 +371,6 @@ export default function DistrictMap({
         const code = feature?.properties?.DIS_CODE;
         const d = districtMap.get(code);
         const isSelected = selectedDistrict === code;
-
         const hasData = !!d;
         const value = hasData ? getMetricValue(d, filters.choroplethMetric) : 0;
 
@@ -408,7 +407,7 @@ export default function DistrictMap({
           layer.bindTooltip(
             `
             <div class="district-name">${name}</div>
-            <div class="tooltip-row"><span>Status</span><span class="value">No facility</span></div>
+            <div class="tooltip-row"><span>Status</span><span class="value">No data</span></div>
           `,
             { className: 'district-tooltip', sticky: true }
           );
@@ -431,13 +430,6 @@ export default function DistrictMap({
     }).addTo(map);
 
     geoLayerRef.current = layer;
-
-    if (selectedDistrict && geojson) {
-      const feat = geojson.features.find((f: any) => f.properties.DIS_CODE === selectedDistrict);
-      if (feat) {
-        map.fitBounds(L.geoJSON(feat).getBounds(), { padding: [40, 40] });
-      }
-    }
   }, [
     geojson,
     districtMap,
@@ -449,6 +441,22 @@ export default function DistrictMap({
     selectedDistrict,
     onDistrictClick,
   ]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !geojson) return;
+
+    if (!selectedDistrict) {
+      map.fitBounds(BANGLADESH_BOUNDS, { padding: [10, 10] });
+      map.setZoom(BANGLADESH_ZOOM);
+      return;
+    }
+
+    const feat = geojson.features.find((f: any) => f.properties.DIS_CODE === selectedDistrict);
+    if (feat) {
+      map.fitBounds(L.geoJSON(feat).getBounds(), { padding: [40, 40] });
+    }
+  }, [selectedDistrict, geojson]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -638,7 +646,7 @@ export default function DistrictMap({
   const handleFitBangladesh = useCallback(() => {
     if (!mapRef.current) return;
     mapRef.current.fitBounds(BANGLADESH_BOUNDS, { padding: [10, 10] });
-    mapRef.current.setZoom(11);
+    mapRef.current.setZoom(BANGLADESH_ZOOM);
   }, []);
 
   const handleFitSelected = useCallback(() => {
@@ -650,7 +658,7 @@ export default function DistrictMap({
   }, [selectedDistrict, geojson]);
 
   const handleResetView = useCallback(() => {
-    mapRef.current?.setView(BANGLADESH_CENTER, 11);
+    mapRef.current?.setView(BANGLADESH_CENTER, BANGLADESH_ZOOM);
   }, []);
 
   const handleLocateUser = useCallback(() => {
@@ -798,40 +806,35 @@ export default function DistrictMap({
           </div>
 
           <div className="space-y-2">
-            {(() => {
-              const labels = ['Low', 'Moderate-Low', 'Moderate', 'Moderate-High', 'High'];
+            <>
+              {palette.map((color, idx) => {
+                const lo = idx === 0 ? metricRange.min : breaks[idx - 1];
+                const hi = idx < breaks.length ? breaks[idx] : metricRange.max;
+                const labels = ['Low', 'Moderate-Low', 'Moderate', 'Moderate-High', 'High'];
 
-              return (
-                <>
-                  {palette.map((color, idx) => {
-                    const lo = idx === 0 ? metricRange.min : breaks[idx - 1];
-                    const hi = idx < breaks.length ? breaks[idx] : metricRange.max;
-
-                    return (
-                      <div key={idx} className="flex items-center gap-2 text-[11px]">
-                        <div
-                          className="w-4 h-3 rounded-sm border border-black/10 shrink-0"
-                          style={{ backgroundColor: color }}
-                        />
-                        <span className="text-foreground">{labels[idx]}</span>
-                        <span className="ml-auto text-muted-foreground">
-                          {formatRangeValue(lo, filters.choroplethMetric)} to{' '}
-                          {formatRangeValue(hi, filters.choroplethMetric)}
-                        </span>
-                      </div>
-                    );
-                  })}
-
-                  <div className="flex items-center gap-2 text-[11px]">
+                return (
+                  <div key={idx} className="flex items-center gap-2 text-[11px]">
                     <div
                       className="w-4 h-3 rounded-sm border border-black/10 shrink-0"
-                      style={{ backgroundColor: NO_DATA_FILL }}
+                      style={{ backgroundColor: color }}
                     />
-                    <span className="text-foreground">No facility</span>
+                    <span className="text-foreground">{labels[idx]}</span>
+                    <span className="ml-auto text-muted-foreground">
+                      {formatRangeValue(lo, filters.choroplethMetric)} to{' '}
+                      {formatRangeValue(hi, filters.choroplethMetric)}
+                    </span>
                   </div>
-                </>
-              );
-            })()}
+                );
+              })}
+
+              <div className="flex items-center gap-2 text-[11px]">
+                <div
+                  className="w-4 h-3 rounded-sm border border-black/10 shrink-0"
+                  style={{ backgroundColor: NO_DATA_FILL }}
+                />
+                <span className="text-foreground">No data</span>
+              </div>
+            </>
           </div>
         </div>
       )}
