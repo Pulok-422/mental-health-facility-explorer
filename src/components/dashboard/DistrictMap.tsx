@@ -777,30 +777,31 @@ export default function DistrictMap({
           map.removeLayer(userMarkerRef.current);
         }
 
+        // Find nearest facility
+        let nearest: { name: string; dist: number } | null = null;
+        facilities.forEach(f => {
+          if (!f.latitude || !f.longitude) return;
+          const d = map.distance([latitude, longitude], [f.latitude, f.longitude]) / 1000;
+          if (!nearest || d < nearest.dist) {
+            nearest = { name: f.facility_name, dist: d };
+          }
+        });
+
+        const nearestHtml = nearest
+          ? `<div style="margin-top:6px;padding-top:6px;border-top:1px solid #e5e7eb;font-size:11px;color:#374151">
+              <div style="font-weight:600;color:#1d4ed8">Nearest Facility</div>
+              <div>${(nearest as any).name}</div>
+              <div style="color:#6b7280">${(nearest as any).dist.toFixed(1)} km · ~${Math.round((nearest as any).dist / 0.8 * 2)} min</div>
+            </div>`
+          : '';
+
         userMarkerRef.current = L.marker([latitude, longitude], {
           icon: L.divIcon({
             className: '',
             html: `
               <div style="position: relative; width: 18px; height: 18px;">
-                <span
-                  style="
-                    position: absolute;
-                    inset: 0;
-                    border-radius: 9999px;
-                    background: rgba(220, 38, 38, 0.35);
-                    animation: userPulse 1.8s ease-out infinite;
-                  "
-                ></span>
-                <span
-                  style="
-                    position: absolute;
-                    inset: 3px;
-                    border-radius: 9999px;
-                    background: #dc2626;
-                    border: 3px solid white;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
-                  "
-                ></span>
+                <span style="position:absolute;inset:0;border-radius:9999px;background:rgba(220,38,38,0.35);animation:userPulse 1.8s ease-out infinite"></span>
+                <span style="position:absolute;inset:3px;border-radius:9999px;background:#dc2626;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.35)"></span>
               </div>
             `,
             iconSize: [18, 18],
@@ -809,22 +810,15 @@ export default function DistrictMap({
         }).addTo(map);
 
         userMarkerRef.current.bindPopup(
-          `
-            <div class="user-location-popup">
-              <div class="user-location-popup-title">
-                <span class="user-location-popup-dot"></span>
-                <span>Your Location</span>
-              </div>
-              <div class="user-location-popup-subtitle">
-                ${latitude.toFixed(4)}, ${longitude.toFixed(4)}
-              </div>
+          `<div class="user-location-popup">
+            <div class="user-location-popup-title">
+              <span class="user-location-popup-dot"></span>
+              <span>Your Location</span>
             </div>
-          `,
-          {
-            closeButton: false,
-            offset: [0, -10],
-            className: 'user-location-leaflet-popup',
-          }
+            <div class="user-location-popup-subtitle">${latitude.toFixed(4)}, ${longitude.toFixed(4)}</div>
+            ${nearestHtml}
+          </div>`,
+          { closeButton: false, offset: [0, -10], className: 'user-location-leaflet-popup' }
         );
 
         userMarkerRef.current.openPopup();
