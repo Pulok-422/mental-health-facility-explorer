@@ -1,204 +1,548 @@
 import { useMemo } from 'react';
 import type { DistrictPop, Facility } from '@/types/dashboard';
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  ScatterChart, Scatter, PieChart, Pie, Cell, CartesianGrid, Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  ScatterChart,
+  Scatter,
+  CartesianGrid,
+  ReferenceLine,
+  Cell,
+  LabelList,
 } from 'recharts';
 
-const COLORS = ['#2196F3', '#26A69A', '#42A5F5', '#1565C0', '#0D47A1', '#00897B', '#4FC3F7', '#0288D1'];
+const CHART_COLORS = {
+  underserved: '#ef4444',
+  served: '#22c55e',
+  neutral: '#3b82f6',
+  accent: '#14b8a6',
+  warning: '#f59e0b',
+  muted: '#94a3b8',
+  criticalFill: '#fee2e2',
+  criticalStroke: '#ef4444',
+  selectedStroke: '#111827',
+};
 
 interface InsightsProps {
   districts: DistrictPop[];
   facilities: Facility[];
+  onDistrictSelect?: (districtName: string) => void;
+  selectedDistrict?: string | null;
 }
 
-function ChartCard({ title, insight, children }: { title: string; insight?: string; children: React.ReactNode }) {
-  return (
-    <div className="dashboard-panel p-4">
-      <h3 className="text-sm font-semibold text-foreground mb-3">{title}</h3>
-      <div style={{ height: 250 }}>{children}</div>
-      {insight && <p className="mt-2 text-[11px] text-muted-foreground italic">{insight}</p>}
-    </div>
-  );
+function formatMillions(value: number) {
+  if (!Number.isFinite(value)) return '0M';
+  return `${value.toFixed(2)}M`;
+}
+
+function truncateLabel(label: string, max = 14) {
+  if (!label) return 'Unknown';
+  return label.length > max ? `${label.slice(0, max)}…` : label;
+}
+
+function getSeverity(per100k: number) {
+  if (per100k <= 0.08) return { label: 'Critical', color: CHART_COLORS.underserved };
+  if (per100k <= 0.18) return { label: 'High', color: '#f97316' };
+  if (per100k <= 0.3) return { label: 'Moderate', color: CHART_COLORS.warning };
+  return { label: 'Better', color: CHART_COLORS.served };
 }
 
 function countBy<T>(arr: T[], key: (item: T) => string): { name: string; value: number }[] {
   const map: Record<string, number> = {};
-  arr.forEach(item => { const k = key(item) || 'Unknown'; map[k] = (map[k] || 0) + 1; });
-  return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  arr.forEach((item) => {
+    const k = (key(item) || 'Unknown').trim() || 'Unknown';
+    map[k] = (map[k] || 0) + 1;
+  });
+  return Object.entries(map)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
 }
 
-function RankingList({ title, data, unit, color }: { title: string; data: { name: string; value: number }[]; unit: string; color: string }) {
-  if (data.length === 0) return null;
+function ChartCard({
+  title,
+  insight,
+  children,
+  height = 300,
+}: {
+  title: string;
+  insight?: string;
+  children: React.ReactNode;
+  height?: number;
+}) {
   return (
-    <div className="dashboard-panel p-4">
-      <h3 className="text-sm font-semibold text-foreground mb-3">{title}</h3>
-      <div className="space-y-1.5">
-        {data.map((d, i) => (
-          <div key={d.name} className="flex items-center justify-between text-xs">
-            <span className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ background: color }}>
-                {i + 1}
-              </span>
-              <span className="text-foreground font-medium">{d.name}</span>
-            </span>
-            <span className="font-semibold text-muted-foreground">{d.value.toFixed(2)} {unit}</span>
-          </div>
-        ))}
+    <div className="dashboard-panel rounded-xl border border-border bg-card p-3 md:p-4">
+      <div className="mb-2">
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        {insight && <p className="mt-1 text-[11px] leading-4 text-muted-foreground">{insight}</p>}
+      </div>
+      <div style={{ height }}>{children}</div>
+    </div>
+  );
+}
+
+function RankingList({
+  title,
+  data,
+  color,
+  onDistrictSelect,
+  selectedDistrict,
+}: {
+  title: string;
+  data: {
+    name: string;
+    value: number;
+    populationM: number;
+    severity: string;
+    severityColor: string;
+  }[];
+  color: string;
+  onDistrictSelect?: (districtName: string) => void;
+  selectedDistrict?: string | null;
+}) {
+  if (!data.length) return null;
+
+  const maxValue = Math.max(...data.map((d) => d.value), 0.01);
+
+  return (
+    <div className="dashboard-panel rounded-xl border border-border bg-card p-3 md:p-4">
+      <h3 className="mb-3 text-sm font-semibold text-foreground">{title}</h3>
+      <div className="space-y-2">
+        {data.map((d, i) => {
+          const isSelected = selectedDistrict === d.name;
+          const widthPct = (d.value / maxValue) * 100;
+
+          return (
+            <button
+              key={d.name}
+              type="button"
+              onClick={() => onDistrictSelect?.(d.name)}
+              className={`w-full rounded-lg border px-2.5 py-2 text-left transition ${
+                isSelected
+                  ? 'border-primary bg-primary/5 shadow-sm'
+                  : 'border-border bg-background hover:border-primary/40 hover:bg-muted/40'
+              }`}
+            >
+              <div className="mb-1.5 flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                      style={{ backgroundColor: color }}
+                    >
+                      {i + 1}
+                    </span>
+                    <span className="truncate text-xs font-semibold text-foreground">{d.name}</span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5 pl-7 text-[10px] text-muted-foreground">
+                    <span className="rounded-md bg-muted px-1.5 py-0.5">Pop: {d.populationM.toFixed(2)}M</span>
+                    <span
+                      className="rounded-md px-1.5 py-0.5 text-white"
+                      style={{ backgroundColor: d.severityColor }}
+                    >
+                      {d.severity}
+                    </span>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <div className="text-xs font-bold text-foreground">{d.value.toFixed(2)}</div>
+                  <div className="text-[10px] text-muted-foreground">per 100K</div>
+                </div>
+              </div>
+
+              <div className="pl-7">
+                <div className="h-1.5 w-full rounded-full bg-muted">
+                  <div
+                    className="h-1.5 rounded-full"
+                    style={{ width: `${Math.max(widthPct, 8)}%`, backgroundColor: color }}
+                  />
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-export default function InsightsTab({ districts, facilities }: InsightsProps) {
-  const districtBars = useMemo(() =>
-    [...districts].sort((a, b) => b.total_facilities - a.total_facilities).slice(0, 15).map(d => ({
-      name: d.DIS_NAME, facilities: d.total_facilities,
-      per100k: +(d.facilitiesPer100k || 0).toFixed(2),
-    }))
-  , [districts]);
+export default function InsightsTab({
+  districts,
+  facilities,
+  onDistrictSelect,
+  selectedDistrict,
+}: InsightsProps) {
+  const districtBars = useMemo(
+    () =>
+      [...districts]
+        .sort((a, b) => b.total_facilities - a.total_facilities)
+        .slice(0, 15)
+        .map((d) => ({
+          name: d.DIS_NAME || 'Unknown',
+          shortName: truncateLabel(d.DIS_NAME || 'Unknown', 12),
+          facilities: d.total_facilities || 0,
+          per100k: +(d.facilitiesPer100k || 0).toFixed(2),
+        })),
+    [districts]
+  );
 
-  const underserved = useMemo(() =>
-    [...districts].filter(d => d.facilitiesPer100k !== undefined)
-      .sort((a, b) => (a.facilitiesPer100k || 0) - (b.facilitiesPer100k || 0))
-      .slice(0, 10).map(d => ({ name: d.DIS_NAME || 'Unknown', value: +(d.facilitiesPer100k || 0).toFixed(2) }))
-  , [districts]);
+  const underserved = useMemo(
+    () =>
+      [...districts]
+        .filter((d) => d.facilitiesPer100k !== undefined)
+        .sort((a, b) => (a.facilitiesPer100k || 0) - (b.facilitiesPer100k || 0))
+        .slice(0, 10)
+        .map((d) => {
+          const per100k = +(d.facilitiesPer100k || 0).toFixed(2);
+          const sev = getSeverity(per100k);
+          return {
+            name: d.DIS_NAME || 'Unknown',
+            value: per100k,
+            populationM: +(d.Population / 1e6).toFixed(2),
+            severity: sev.label,
+            severityColor: sev.color,
+          };
+        }),
+    [districts]
+  );
 
-  const bestServed = useMemo(() =>
-    [...districts].filter(d => d.facilitiesPer100k !== undefined)
-      .sort((a, b) => (b.facilitiesPer100k || 0) - (a.facilitiesPer100k || 0))
-      .slice(0, 10).map(d => ({ name: d.DIS_NAME || 'Unknown', value: +(d.facilitiesPer100k || 0).toFixed(2) }))
-  , [districts]);
+  const bestServed = useMemo(
+    () =>
+      [...districts]
+        .filter((d) => d.facilitiesPer100k !== undefined)
+        .sort((a, b) => (b.facilitiesPer100k || 0) - (a.facilitiesPer100k || 0))
+        .slice(0, 10)
+        .map((d) => {
+          const per100k = +(d.facilitiesPer100k || 0).toFixed(2);
+          const sev = getSeverity(per100k);
+          return {
+            name: d.DIS_NAME || 'Unknown',
+            value: per100k,
+            populationM: +(d.Population / 1e6).toFixed(2),
+            severity: sev.label,
+            severityColor: sev.color,
+          };
+        }),
+    [districts]
+  );
 
-  const facilityVsNeed = useMemo(() =>
-    districts.map(d => ({
-      name: d.DIS_NAME,
-      population: +(d.Population / 1e6).toFixed(2),
-      per100k: +(d.facilitiesPer100k || 0).toFixed(2),
-    }))
-  , [districts]);
+  const populationMedian = useMemo(() => {
+    const vals = districts
+      .map((d) => d.Population / 1e6)
+      .filter((v) => Number.isFinite(v))
+      .sort((a, b) => a - b);
+    if (!vals.length) return 0;
+    const mid = Math.floor(vals.length / 2);
+    return vals.length % 2 === 0 ? (vals[mid - 1] + vals[mid]) / 2 : vals[mid];
+  }, [districts]);
 
-  const scatterData = useMemo(() =>
-    districts.map(d => ({
-      name: d.DIS_NAME,
-      poverty: d['Poverty Index'],
-      per100k: +(d.facilitiesPer100k || 0).toFixed(2),
-      facilities: d.total_facilities,
-    }))
-  , [districts]);
+  const coverageMedian = useMemo(() => {
+    const vals = districts
+      .map((d) => d.facilitiesPer100k || 0)
+      .filter((v) => Number.isFinite(v))
+      .sort((a, b) => a - b);
+    if (!vals.length) return 0;
+    const mid = Math.floor(vals.length / 2);
+    return vals.length % 2 === 0 ? (vals[mid - 1] + vals[mid]) / 2 : vals[mid];
+  }, [districts]);
 
-  const facilityTypeDist = useMemo(() => countBy(facilities, f => f.facility_type), [facilities]);
-  const ownershipDist = useMemo(() => countBy(facilities, f => f.ownership), [facilities]);
-  const costDist = useMemo(() => countBy(facilities, f => f.cost), [facilities]);
-  const categoryDist = useMemo(() => countBy(facilities, f => f.category_adult_child_both), [facilities]);
+  const facilityVsNeed = useMemo(() => {
+    const points = districts.map((d) => {
+      const population = +(d.Population / 1e6).toFixed(2);
+      const per100k = +(d.facilitiesPer100k || 0).toFixed(2);
+      const critical = population >= populationMedian && per100k <= coverageMedian;
+
+      return {
+        name: d.DIS_NAME || 'Unknown',
+        population,
+        per100k,
+        poverty: d['Poverty Index'],
+        facilities: d.total_facilities || 0,
+        critical,
+        selected: selectedDistrict === (d.DIS_NAME || 'Unknown'),
+      };
+    });
+
+    const criticalSorted = [...points]
+      .filter((d) => d.critical)
+      .sort((a, b) => b.population - a.population || a.per100k - b.per100k)
+      .slice(0, 10)
+      .map((d) => ({ ...d, label: d.name }));
+
+    const normal = points.filter((d) => !critical && !d.selected);
+    const selected = points.filter((d) => d.selected);
+
+    return { all: points, critical: criticalSorted, normal, selected };
+  }, [districts, populationMedian, coverageMedian, selectedDistrict]);
+
+  const facilityTypeDist = useMemo(() => countBy(facilities, (f) => f.facility_type).slice(0, 10), [facilities]);
+  const ownershipDist = useMemo(() => countBy(facilities, (f) => f.ownership), [facilities]);
+  const costDist = useMemo(() => countBy(facilities, (f) => f.cost), [facilities]);
+  const categoryDist = useMemo(() => countBy(facilities, (f) => f.category_adult_child_both), [facilities]);
+
+  const povertyScatter = useMemo(
+    () =>
+      districts.map((d) => ({
+        name: d.DIS_NAME || 'Unknown',
+        poverty: Number(d['Poverty Index']) || 0,
+        per100k: +(d.facilitiesPer100k || 0).toFixed(2),
+        facilities: d.total_facilities || 0,
+        populationM: +(d.Population / 1e6).toFixed(2),
+        selected: selectedDistrict === (d.DIS_NAME || 'Unknown'),
+      })),
+    [districts, selectedDistrict]
+  );
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Rankings */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <RankingList title="Top 10 Underserved Districts" data={underserved} unit="per 100K" color="#ef4444" />
-        <RankingList title="Top 10 Best Served Districts" data={bestServed} unit="per 100K" color="#22c55e" />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <RankingList
+          title="Top 10 Underserved Districts"
+          data={underserved}
+          color={CHART_COLORS.underserved}
+          onDistrictSelect={onDistrictSelect}
+          selectedDistrict={selectedDistrict}
+        />
+        <RankingList
+          title="Top 10 Best Served Districts"
+          data={bestServed}
+          color={CHART_COLORS.served}
+          onDistrictSelect={onDistrictSelect}
+          selectedDistrict={selectedDistrict}
+        />
       </div>
 
-      {/* Facilities vs Need scatter */}
       <ChartCard
-        title="Facilities vs Need (Population vs Coverage)"
-        insight="Districts in the bottom-right quadrant have high population but low facility coverage, indicating underserved areas needing priority attention."
+        title="Service Gap Analysis"
+        insight="Red points mark districts with above-median population and below-median facility coverage. Click a point or ranking item to sync this with the map."
+        height={320}
       >
         <ResponsiveContainer>
-          <ScatterChart margin={{ left: 10, right: 20, top: 10, bottom: 10 }}>
+          <ScatterChart margin={{ left: 8, right: 18, top: 10, bottom: 16 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="population" name="Population (M)" tick={{ fontSize: 10 }} label={{ value: 'Population (M)', position: 'bottom', fontSize: 10, offset: -5 }} />
-            <YAxis dataKey="per100k" name="Facilities per 100K" tick={{ fontSize: 10 }} label={{ value: 'Facilities per 100K', angle: -90, position: 'insideLeft', fontSize: 10 }} />
+            <ReferenceLine
+              x={+populationMedian.toFixed(2)}
+              stroke="#94a3b8"
+              strokeDasharray="4 4"
+              label={{ value: 'Median population', position: 'insideTopRight', fontSize: 10 }}
+            />
+            <ReferenceLine
+              y={+coverageMedian.toFixed(2)}
+              stroke="#94a3b8"
+              strokeDasharray="4 4"
+              label={{ value: 'Median coverage', position: 'insideTopLeft', fontSize: 10 }}
+            />
+            <XAxis
+              type="number"
+              dataKey="population"
+              name="Population (M)"
+              tick={{ fontSize: 10 }}
+              label={{ value: 'Population (M)', position: 'bottom', fontSize: 10, offset: -4 }}
+            />
+            <YAxis
+              type="number"
+              dataKey="per100k"
+              name="Facilities per 100K"
+              tick={{ fontSize: 10 }}
+              label={{ value: 'Facilities per 100K', angle: -90, position: 'insideLeft', fontSize: 10 }}
+            />
             <Tooltip
-              contentStyle={{ borderRadius: 8, fontSize: 12 }}
-              formatter={(value: number, name: string) => [value, name]}
-              labelFormatter={() => ''}
-              content={({ payload }) => {
-                if (!payload?.length) return null;
+              cursor={{ strokeDasharray: '4 4' }}
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
                 const d = payload[0].payload;
                 return (
-                  <div className="bg-card border border-border rounded-lg p-2 shadow-md text-xs">
-                    <div className="font-bold text-foreground">{d.name}</div>
-                    <div className="text-muted-foreground">Population: {d.population}M</div>
-                    <div className="text-muted-foreground">Per 100K: {d.per100k}</div>
+                  <div className="rounded-lg border border-border bg-card p-2 text-xs shadow-md">
+                    <div className="font-semibold text-foreground">{d.name}</div>
+                    <div className="text-muted-foreground">Population: {formatMillions(d.population)}</div>
+                    <div className="text-muted-foreground">Coverage: {d.per100k} per 100K</div>
+                    <div className="text-muted-foreground">Facilities: {d.facilities}</div>
+                    {typeof d.poverty === 'number' && (
+                      <div className="text-muted-foreground">Poverty Index: {d.poverty}</div>
+                    )}
+                    {d.critical && <div className="mt-1 font-medium text-red-600">Priority district</div>}
                   </div>
                 );
               }}
             />
-            <Scatter data={facilityVsNeed} fill="#1565C0" />
+
+            <Scatter
+              data={facilityVsNeed.normal}
+              fill={CHART_COLORS.neutral}
+              onClick={(data: any) => onDistrictSelect?.(data?.name)}
+            />
+
+            <Scatter
+              data={facilityVsNeed.critical}
+              fill={CHART_COLORS.underserved}
+              onClick={(data: any) => onDistrictSelect?.(data?.name)}
+            >
+              <LabelList dataKey="label" position="top" fontSize={10} />
+            </Scatter>
+
+            <Scatter
+              data={facilityVsNeed.selected}
+              fill={CHART_COLORS.warning}
+              onClick={(data: any) => onDistrictSelect?.(data?.name)}
+            />
           </ScatterChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      {/* Charts grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <ChartCard title="Facilities by District (Top 15)" insight="Shows concentration of mental health facilities across districts.">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <ChartCard
+          title="Facilities by District (Top 15)"
+          insight="Shows where facilities are concentrated. Click a bar to focus the same district across the dashboard and map."
+          height={290}
+        >
           <ResponsiveContainer>
-            <BarChart data={districtBars} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+            <BarChart data={districtBars} margin={{ left: 0, right: 10, top: 5, bottom: 45 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 9 }} angle={-45} textAnchor="end" height={80} />
+              <XAxis dataKey="shortName" tick={{ fontSize: 9 }} angle={-35} textAnchor="end" interval={0} height={60} />
               <YAxis tick={{ fontSize: 10 }} label={{ value: 'Count', angle: -90, position: 'insideLeft', fontSize: 10 }} />
-              <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-              <Bar dataKey="facilities" fill="#2196F3" radius={[4, 4, 0, 0]} />
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null;
+                  const d = payload[0].payload;
+                  return (
+                    <div className="rounded-lg border border-border bg-card p-2 text-xs shadow-md">
+                      <div className="font-semibold text-foreground">{d.name}</div>
+                      <div className="text-muted-foreground">Facilities: {d.facilities}</div>
+                      <div className="text-muted-foreground">Coverage: {d.per100k} per 100K</div>
+                    </div>
+                  );
+                }}
+              />
+              <Bar dataKey="facilities" radius={[6, 6, 0, 0]} onClick={(data: any) => onDistrictSelect?.(data?.name)}>
+                {districtBars.map((entry) => (
+                  <Cell
+                    key={entry.name}
+                    fill={selectedDistrict === entry.name ? CHART_COLORS.warning : CHART_COLORS.neutral}
+                  />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Facility Type Distribution" insight="Breakdown by type of mental health facility.">
+        <ChartCard
+          title="Facility Type Distribution"
+          insight="Horizontal bars make smaller categories easier to compare than a pie chart."
+          height={290}
+        >
           <ResponsiveContainer>
-            <PieChart>
-              <Pie data={facilityTypeDist} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} style={{ fontSize: 10 }}>
-                {facilityTypeDist.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-              </Pie>
+            <BarChart data={facilityTypeDist} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis type="number" tick={{ fontSize: 10 }} />
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={110}
+                tick={{ fontSize: 10 }}
+                tickFormatter={(v) => truncateLabel(v, 18)}
+              />
               <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-            </PieChart>
+              <Bar dataKey="value" fill={CHART_COLORS.neutral} radius={[0, 6, 6, 0]} />
+            </BarChart>
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Ownership Distribution" insight="Government vs private sector involvement in mental health services.">
+        <ChartCard
+          title="Ownership Distribution"
+          insight="Shows the balance between government and private facilities using a directly comparable bar chart."
+          height={290}
+        >
           <ResponsiveContainer>
-            <PieChart>
-              <Pie data={ownershipDist} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} style={{ fontSize: 10 }}>
-                {ownershipDist.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-              </Pie>
+            <BarChart data={ownershipDist} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis type="number" tick={{ fontSize: 10 }} />
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={90}
+                tick={{ fontSize: 10 }}
+                tickFormatter={(v) => truncateLabel(v, 16)}
+              />
               <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-            </PieChart>
+              <Bar dataKey="value" fill={CHART_COLORS.accent} radius={[0, 6, 6, 0]} />
+            </BarChart>
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Cost Distribution" insight="Distribution of free vs paid mental health services.">
+        <ChartCard title="Cost Distribution" insight="Distribution of free versus paid mental health services." height={280}>
           <ResponsiveContainer>
-            <BarChart data={costDist}>
+            <BarChart data={costDist} margin={{ left: 0, right: 10, top: 5, bottom: 25 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="name" tick={{ fontSize: 10 }} />
               <YAxis tick={{ fontSize: 10 }} label={{ value: 'Count', angle: -90, position: 'insideLeft', fontSize: 10 }} />
               <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-              <Bar dataKey="value" fill="#26A69A" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="value" fill={CHART_COLORS.accent} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Category Distribution" insight="Service categorization by patient demographics.">
+        <ChartCard title="Category Distribution" insight="Service categories by target patient group." height={280}>
           <ResponsiveContainer>
-            <BarChart data={categoryDist}>
+            <BarChart data={categoryDist} margin={{ left: 0, right: 10, top: 5, bottom: 40 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} />
+              <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={55} />
               <YAxis tick={{ fontSize: 10 }} label={{ value: 'Count', angle: -90, position: 'insideLeft', fontSize: 10 }} />
               <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-              <Bar dataKey="value" fill="#42A5F5" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="value" fill={CHART_COLORS.neutral} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Poverty Index vs Facilities Per 100K" insight="Higher poverty districts often have fewer facilities per capita.">
+        <ChartCard
+          title="Poverty Index vs Facilities Per 100K"
+          insight="Use this to check whether poorer districts also face lower service density. Click a point to sync with the map."
+          height={280}
+        >
           <ResponsiveContainer>
-            <ScatterChart margin={{ left: 0, right: 10, top: 10, bottom: 5 }}>
+            <ScatterChart margin={{ left: 0, right: 10, top: 10, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="poverty" name="Poverty Index" tick={{ fontSize: 10 }} label={{ value: 'Poverty Index', position: 'bottom', fontSize: 10, offset: -5 }} />
-              <YAxis dataKey="per100k" name="Per 100K" tick={{ fontSize: 10 }} label={{ value: 'Per 100K', angle: -90, position: 'insideLeft', fontSize: 10 }} />
-              <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-              <Scatter data={scatterData} fill="#1565C0" />
+              <XAxis
+                type="number"
+                dataKey="poverty"
+                name="Poverty Index"
+                tick={{ fontSize: 10 }}
+                label={{ value: 'Poverty Index', position: 'bottom', fontSize: 10, offset: -5 }}
+              />
+              <YAxis
+                type="number"
+                dataKey="per100k"
+                name="Per 100K"
+                tick={{ fontSize: 10 }}
+                label={{ value: 'Per 100K', angle: -90, position: 'insideLeft', fontSize: 10 }}
+              />
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null;
+                  const d = payload[0].payload;
+                  return (
+                    <div className="rounded-lg border border-border bg-card p-2 text-xs shadow-md">
+                      <div className="font-semibold text-foreground">{d.name}</div>
+                      <div className="text-muted-foreground">Poverty Index: {d.poverty}</div>
+                      <div className="text-muted-foreground">Coverage: {d.per100k} per 100K</div>
+                      <div className="text-muted-foreground">Population: {d.populationM}M</div>
+                      <div className="text-muted-foreground">Facilities: {d.facilities}</div>
+                    </div>
+                  );
+                }}
+              />
+              <Scatter
+                data={povertyScatter.filter((d) => !d.selected)}
+                fill={CHART_COLORS.neutral}
+                onClick={(data: any) => onDistrictSelect?.(data?.name)}
+              />
+              <Scatter
+                data={povertyScatter.filter((d) => d.selected)}
+                fill={CHART_COLORS.warning}
+                onClick={(data: any) => onDistrictSelect?.(data?.name)}
+              />
             </ScatterChart>
           </ResponsiveContainer>
         </ChartCard>
