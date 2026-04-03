@@ -10,7 +10,7 @@ import DistrictInfoCard from './DistrictInfoCard';
 import MapControls, { getMetricPalette } from './MapControls';
 
 const BANGLADESH_CENTER: [number, number] = [23.7, 90.35];
-const BANGLADESH_ZOOM = 8.5;
+const BANGLADESH_ZOOM = 9.5;
 const BANGLADESH_BOUNDS: L.LatLngBoundsExpression = [[20.5, 88.0], [26.7, 92.7]];
 
 const TILE_LAYERS: Record<'light' | 'street' | 'satellite', string> = {
