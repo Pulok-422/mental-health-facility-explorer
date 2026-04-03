@@ -7,7 +7,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet.heat';
 import type { DistrictPop, Facility, Filters, ChoroplethMetric, BubbleMetric } from '@/types/dashboard';
 import DistrictInfoCard from './DistrictInfoCard';
-import MapControls, { getMetricPalette } from './MapControls';
+import MapControls from './MapControls';
 
 const BANGLADESH_CENTER: [number, number] = [23.7, 90.35];
 const BANGLADESH_ZOOM = 8.5;
@@ -19,6 +19,25 @@ const TILE_LAYERS: Record<'light' | 'street' | 'satellite', string> = {
   street: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
   satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
 };
+
+function getMetricPalette(metric: ChoroplethMetric): string[] {
+  switch (metric) {
+    case 'facilities':
+      return ['#EFF6FF', '#BFDBFE', '#60A5FA', '#2563EB', '#1E3A8A']; // blue
+    case 'population':
+      return ['#F5F3FF', '#DDD6FE', '#A78BFA', '#7C3AED', '#4C1D95']; // purple
+    case 'facilitiesPer100k':
+      return ['#ECFDF5', '#A7F3D0', '#34D399', '#059669', '#064E3B']; // green
+    case 'povertyIndex':
+      return ['#FEF2F2', '#FCA5A5', '#EF4444', '#B91C1C', '#7F1D1D']; // red
+    case 'literacyRate':
+      return ['#F0FDFA', '#99F6E4', '#2DD4BF', '#0D9488', '#134E4A']; // teal
+    case 'urbanPercent':
+      return ['#FFF7ED', '#FED7AA', '#FB923C', '#EA580C', '#7C2D12']; // orange
+    default:
+      return ['#EFF6FF', '#BFDBFE', '#60A5FA', '#2563EB', '#1E3A8A'];
+  }
+}
 
 function getMetricValue(district: DistrictPop, metric: ChoroplethMetric | BubbleMetric): number {
   switch (metric) {
@@ -806,35 +825,33 @@ export default function DistrictMap({
           </div>
 
           <div className="space-y-2">
-            <>
-              {palette.map((color, idx) => {
-                const lo = idx === 0 ? metricRange.min : breaks[idx - 1];
-                const hi = idx < breaks.length ? breaks[idx] : metricRange.max;
-                const labels = ['Low', 'Moderate-Low', 'Moderate', 'Moderate-High', 'High'];
+            {palette.map((color, idx) => {
+              const lo = idx === 0 ? metricRange.min : breaks[idx - 1];
+              const hi = idx < breaks.length ? breaks[idx] : metricRange.max;
+              const labels = ['Low', 'Moderate-Low', 'Moderate', 'Moderate-High', 'High'];
 
-                return (
-                  <div key={idx} className="flex items-center gap-2 text-[11px]">
-                    <div
-                      className="w-4 h-3 rounded-sm border border-black/10 shrink-0"
-                      style={{ backgroundColor: color }}
-                    />
-                    <span className="text-foreground">{labels[idx]}</span>
-                    <span className="ml-auto text-muted-foreground">
-                      {formatRangeValue(lo, filters.choroplethMetric)} to{' '}
-                      {formatRangeValue(hi, filters.choroplethMetric)}
-                    </span>
-                  </div>
-                );
-              })}
+              return (
+                <div key={idx} className="flex items-center gap-2 text-[11px]">
+                  <div
+                    className="w-4 h-3 rounded-sm border border-black/10 shrink-0"
+                    style={{ backgroundColor: color }}
+                  />
+                  <span className="text-foreground">{labels[idx]}</span>
+                  <span className="ml-auto text-muted-foreground">
+                    {formatRangeValue(lo, filters.choroplethMetric)} to{' '}
+                    {formatRangeValue(hi, filters.choroplethMetric)}
+                  </span>
+                </div>
+              );
+            })}
 
-              <div className="flex items-center gap-2 text-[11px]">
-                <div
-                  className="w-4 h-3 rounded-sm border border-black/10 shrink-0"
-                  style={{ backgroundColor: NO_DATA_FILL }}
-                />
-                <span className="text-foreground">No data</span>
-              </div>
-            </>
+            <div className="flex items-center gap-2 text-[11px]">
+              <div
+                className="w-4 h-3 rounded-sm border border-black/10 shrink-0"
+                style={{ backgroundColor: NO_DATA_FILL }}
+              />
+              <span className="text-foreground">No data</span>
+            </div>
           </div>
         </div>
       )}
