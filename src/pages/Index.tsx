@@ -109,8 +109,10 @@ export default function Index() {
             {/* KPIs */}
             <KPICards districts={activeDistricts} facilities={activeFacilities} />
 
-            {/* District Summary */}
-            <DistrictSummaryCards districts={activeDistricts} />
+            {/* District Summary - only when multiple districts are active */}
+            {activeDistricts.length >= 2 && (
+              <DistrictSummaryCards districts={activeDistricts} />
+            )}
 
             {/* Tab Content */}
             {activeTab === 'map' && (
