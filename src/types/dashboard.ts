@@ -43,6 +43,7 @@ export interface Facility {
   DIS_CODE: string;
 }
 
+/** Data filters — affect activeDistricts/activeFacilities */
 export interface Filters {
   districts: string[];
   facilityTypes: string[];
@@ -58,22 +59,25 @@ export interface Filters {
   urbanRange: [number, number];
   populationRange: [number, number];
   facilitiesRange: [number, number];
+}
+
+/** Map display state — does NOT trigger data filtering recompute */
+export interface MapDisplay {
   showChoropleth: boolean;
   showMarkers: boolean;
   showHeatmap: boolean;
   showBubbles: boolean;
   showLabels: boolean;
-  normalizeByPop: boolean;
   choroplethMetric: ChoroplethMetric;
   bubbleMetric: BubbleMetric;
 }
 
-export type ChoroplethMetric = 
-  | 'facilities' 
-  | 'population' 
-  | 'facilitiesPer100k' 
-  | 'populationPerFacility' 
-  | 'povertyIndex' 
+export type ChoroplethMetric =
+  | 'facilities'
+  | 'population'
+  | 'facilitiesPer100k'
+  | 'populationPerFacility'
+  | 'povertyIndex'
   | 'literacyRate'
   | 'urbanPercent';
 

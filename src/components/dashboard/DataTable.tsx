@@ -15,12 +15,38 @@ const PAGE_SIZE = 15;
 function exportCSV(data: Record<string, any>[], filename: string) {
   if (data.length === 0) return;
   const keys = Object.keys(data[0]);
-  const csv = [keys.join(','), ...data.map(row => keys.map(k => `"${String(row[k] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
+  const csv = [
+    keys.join(','),
+    ...data.map((row) =>
+      keys.map((k) => `"${String(row[k] ?? '').replace(/"/g, '""')}"`).join(',')
+    ),
+  ].join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
+  a.href = url;
+  a.download = filename;
+  a.click();
   URL.revokeObjectURL(url);
+}
+
+// Fix #8: clean cell formatter with correct precedence
+function formatCell(value: any, key: string): string {
+  if (value == null || value === '') return '-';
+  if (typeof value !== 'number') return String(value);
+  if (!Number.isFinite(value)) return '-';
+
+  const isPerCapita =
+    key === 'facilitiesPer100k' ||
+    key === 'populationPerFacility' ||
+    key === 'householdsPerFacility' ||
+    key.toLowerCase().includes('per100k') ||
+    key.toLowerCase().includes('perfacility');
+
+  if (isPerCapita) return value.toFixed(2);
+  if (value >= 1000) return value.toLocaleString();
+  // small numbers (poverty index, literacy %)
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
 export default function DataTable({ districts, facilities, onFacilityClick }: DataTableProps) {
@@ -34,13 +60,20 @@ export default function DataTable({ districts, facilities, onFacilityClick }: Da
     let list = facilities;
     if (search) {
       const q = search.toLowerCase();
-      list = list.filter(f => f.facility_name.toLowerCase().includes(q) || f.DIS_NAME?.toLowerCase().includes(q));
+      list = list.filter(
+        (f) =>
+          f.facility_name.toLowerCase().includes(q) ||
+          f.DIS_NAME?.toLowerCase().includes(q)
+      );
     }
     if (sortKey) {
       list = [...list].sort((a, b) => {
         const av = (a as any)[sortKey] ?? '';
         const bv = (b as any)[sortKey] ?? '';
-        const cmp = typeof av === 'number' ? av - bv : String(av).localeCompare(String(bv));
+        const cmp =
+          typeof av === 'number' && typeof bv === 'number'
+            ? av - bv
+            : String(av).localeCompare(String(bv));
         return sortDir === 'asc' ? cmp : -cmp;
       });
     }
@@ -51,13 +84,16 @@ export default function DataTable({ districts, facilities, onFacilityClick }: Da
     let list = districts;
     if (search) {
       const q = search.toLowerCase();
-      list = list.filter(d => d.DIS_NAME?.toLowerCase().includes(q));
+      list = list.filter((d) => d.DIS_NAME?.toLowerCase().includes(q));
     }
     if (sortKey) {
       list = [...list].sort((a, b) => {
         const av = (a as any)[sortKey] ?? '';
         const bv = (b as any)[sortKey] ?? '';
-        const cmp = typeof av === 'number' ? av - bv : String(av).localeCompare(String(bv));
+        const cmp =
+          typeof av === 'number' && typeof bv === 'number'
+            ? av - bv
+            : String(av).localeCompare(String(bv));
         return sortDir === 'asc' ? cmp : -cmp;
       });
     }
@@ -65,12 +101,16 @@ export default function DataTable({ districts, facilities, onFacilityClick }: Da
   }, [districts, search, sortKey, sortDir]);
 
   const currentData = tab === 'facilities' ? filteredFacilities : filteredDistricts;
-  const totalPages = Math.ceil(currentData.length / PAGE_SIZE);
-  const pageData = currentData.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(currentData.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const pageData = currentData.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
   const handleSort = (key: string) => {
-    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-    else { setSortKey(key); setSortDir('asc'); }
+    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
   };
 
   const facCols = [
@@ -102,10 +142,30 @@ export default function DataTable({ districts, facilities, onFacilityClick }: Da
     <div className="dashboard-panel animate-fade-in">
       <div className="p-4 border-b border-border flex flex-wrap items-center gap-3">
         <div className="flex gap-1 bg-secondary rounded-lg p-0.5">
-          <button onClick={() => { setTab('facilities'); setPage(0); setSortKey(''); }} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${tab === 'facilities' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
+          <button
+            type="button"
+            onClick={() => {
+              setTab('facilities');
+              setPage(0);
+              setSortKey('');
+            }}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              tab === 'facilities' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+            }`}
+          >
             Facilities ({facilities.length})
           </button>
-          <button onClick={() => { setTab('districts'); setPage(0); setSortKey(''); }} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${tab === 'districts' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
+          <button
+            type="button"
+            onClick={() => {
+              setTab('districts');
+              setPage(0);
+              setSortKey('');
+            }}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              tab === 'districts' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+            }`}
+          >
             District Summary ({districts.length})
           </button>
         </div>
@@ -114,11 +174,21 @@ export default function DataTable({ districts, facilities, onFacilityClick }: Da
           <Input
             placeholder="Search..."
             value={search}
-            onChange={e => { setSearch(e.target.value); setPage(0); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(0);
+            }}
             className="h-8 pl-8 text-xs bg-secondary border-0"
+            aria-label="Search table"
           />
         </div>
-        <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => exportCSV(currentData as any[], `${tab}.csv`)}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs"
+          disabled={currentData.length === 0}
+          onClick={() => exportCSV(currentData as any[], `${tab}.csv`)}
+        >
           <Download className="h-3 w-3 mr-1" /> Export CSV
         </Button>
       </div>
@@ -127,11 +197,23 @@ export default function DataTable({ districts, facilities, onFacilityClick }: Da
         <table className="w-full text-xs">
           <thead>
             <tr className="bg-muted/50">
-              {cols.map(col => (
+              {cols.map((col) => (
                 <th
                   key={col.key}
+                  scope="col"
                   onClick={() => handleSort(col.key)}
-                  className="px-3 py-2.5 text-left font-semibold text-muted-foreground cursor-pointer hover:text-foreground transition-colors whitespace-nowrap"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSort(col.key);
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-sort={
+                    sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'
+                  }
+                  className="px-3 py-2.5 text-left font-semibold text-muted-foreground cursor-pointer hover:text-foreground transition-colors whitespace-nowrap focus:outline-none focus-visible:text-foreground"
                 >
                   {col.label} {sortKey === col.key && (sortDir === 'asc' ? '↑' : '↓')}
                 </th>
@@ -139,21 +221,26 @@ export default function DataTable({ districts, facilities, onFacilityClick }: Da
             </tr>
           </thead>
           <tbody>
+            {pageData.length === 0 && (
+              <tr>
+                <td colSpan={cols.length} className="px-3 py-10 text-center text-muted-foreground">
+                  No results match the current filters.
+                </td>
+              </tr>
+            )}
             {pageData.map((row: any, i: number) => (
               <tr
                 key={i}
                 onClick={() => tab === 'facilities' && onFacilityClick?.(row)}
                 className="border-b border-border/50 hover:bg-muted/30 cursor-pointer transition-colors"
               >
-                {cols.map(col => (
-                  <td key={col.key} className="px-3 py-2 whitespace-nowrap max-w-[200px] truncate">
-                    {typeof row[col.key] === 'number'
-                      ? row[col.key] > 1000
-                        ? row[col.key].toLocaleString()
-                        : typeof row[col.key] === 'number' && col.key.includes('Per') || col.key.includes('per')
-                          ? row[col.key].toFixed(2)
-                          : row[col.key]
-                      : row[col.key] || '-'}
+                {cols.map((col) => (
+                  <td
+                    key={col.key}
+                    className="px-3 py-2 whitespace-nowrap max-w-[200px] truncate"
+                    title={String(row[col.key] ?? '')}
+                  >
+                    {formatCell(row[col.key], col.key)}
                   </td>
                 ))}
               </tr>
@@ -163,12 +250,33 @@ export default function DataTable({ districts, facilities, onFacilityClick }: Da
       </div>
 
       <div className="p-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-        <span>Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, currentData.length)} of {currentData.length}</span>
+        <span>
+          {currentData.length === 0
+            ? '0 results'
+            : `Showing ${safePage * PAGE_SIZE + 1}–${Math.min(
+                (safePage + 1) * PAGE_SIZE,
+                currentData.length
+              )} of ${currentData.length}`}
+        </span>
         <div className="flex gap-1">
-          <Button variant="ghost" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)} className="h-7 w-7 p-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={safePage === 0}
+            onClick={() => setPage((p) => p - 1)}
+            className="h-7 w-7 p-0"
+            aria-label="Previous page"
+          >
             <ChevronLeft className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)} className="h-7 w-7 p-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={safePage >= totalPages - 1}
+            onClick={() => setPage((p) => p + 1)}
+            className="h-7 w-7 p-0"
+            aria-label="Next page"
+          >
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>
         </div>

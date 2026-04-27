@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import type { Filters } from '@/types/dashboard';
+import type { Filters, MapDisplay, ChoroplethMetric } from '@/types/dashboard';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, RotateCcw, MapPin, Layers, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, RotateCcw, MapPin, Layers, ChevronDown, ChevronRight, Map as MapIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface FilterPanelProps {
   filters: Filters;
   updateFilter: <K extends keyof Filters>(key: K, value: Filters[K]) => void;
+  mapDisplay: MapDisplay;
+  updateMapDisplay: <K extends keyof MapDisplay>(key: K, value: MapDisplay[K]) => void;
   resetFilters: () => void;
   filterOptions: {
     districts: { code: string; name: string }[];
@@ -26,25 +28,33 @@ interface FilterPanelProps {
 function CollapsibleSection({
   title,
   icon,
+  count,
   children,
   defaultOpen = false,
 }: {
   title: string;
   icon?: React.ReactNode;
+  count?: number;
   children: React.ReactNode;
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
-
   return (
     <div className="border-b border-border pb-2 mb-2">
       <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="w-full flex items-center justify-between py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors focus:outline-none focus-visible:text-foreground"
       >
         <span className="flex items-center gap-1.5">
           {icon}
           {title}
+          {count && count > 0 ? (
+            <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+              {count}
+            </span>
+          ) : null}
         </span>
         {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
       </button>
@@ -83,9 +93,52 @@ function CheckboxFilter({
   );
 }
 
+function ToggleRow({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center justify-between gap-2 cursor-pointer py-1">
+      <span className="text-[12px] text-foreground leading-none">{label}</span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        onClick={() => onChange(!checked)}
+        className={`relative h-5 w-9 rounded-full transition-colors shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+          checked ? 'bg-primary' : 'bg-muted'
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+            checked ? 'translate-x-4' : 'translate-x-0.5'
+          }`}
+        />
+      </button>
+    </label>
+  );
+}
+
+const CHOROPLETH_OPTIONS: { value: ChoroplethMetric; label: string }[] = [
+  { value: 'facilities', label: 'Total Facilities' },
+  { value: 'population', label: 'Population' },
+  { value: 'facilitiesPer100k', label: 'Facilities per 100K' },
+  { value: 'povertyIndex', label: 'Poverty Index' },
+  { value: 'literacyRate', label: 'Literacy Rate' },
+  { value: 'urbanPercent', label: 'Urban Percent' },
+];
+
 export default function FilterPanel({
   filters,
   updateFilter,
+  mapDisplay,
+  updateMapDisplay,
   resetFilters,
   filterOptions,
   selectedDistrict,
@@ -124,6 +177,7 @@ export default function FilterPanel({
               value={filters.searchQuery}
               onChange={(e) => updateFilter('searchQuery', e.target.value)}
               className="h-8 pl-8 text-xs bg-secondary border-0"
+              aria-label="Search facility name"
             />
           </div>
         </div>
@@ -133,8 +187,9 @@ export default function FilterPanel({
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">Selected District</span>
               <button
+                type="button"
                 onClick={() => setSelectedDistrict(null)}
-                className="px-2 py-0.5 text-xs rounded-full bg-primary text-primary-foreground flex items-center gap-1"
+                className="px-2 py-0.5 text-xs rounded-full bg-primary text-primary-foreground flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 {filterOptions.districts.find((d) => d.code === selectedDistrict)?.name} ×
               </button>
@@ -142,7 +197,69 @@ export default function FilterPanel({
           </div>
         )}
 
-        <CollapsibleSection title="District" icon={<MapPin className="h-3 w-3" />}>
+        {/* Map Layers — moved into sidebar */}
+        <CollapsibleSection
+          title="Map Layers"
+          icon={<MapIcon className="h-3 w-3" />}
+          defaultOpen
+        >
+          <ToggleRow
+            label="Choropleth"
+            checked={mapDisplay.showChoropleth}
+            onChange={(v) => updateMapDisplay('showChoropleth', v)}
+          />
+          <ToggleRow
+            label="Facility Markers"
+            checked={mapDisplay.showMarkers}
+            onChange={(v) => updateMapDisplay('showMarkers', v)}
+          />
+          <ToggleRow
+            label="Heatmap"
+            checked={mapDisplay.showHeatmap}
+            onChange={(v) => updateMapDisplay('showHeatmap', v)}
+          />
+          <ToggleRow
+            label="Bubble Overlay"
+            checked={mapDisplay.showBubbles}
+            onChange={(v) => updateMapDisplay('showBubbles', v)}
+          />
+          <ToggleRow
+            label="District Labels"
+            checked={mapDisplay.showLabels}
+            onChange={(v) => updateMapDisplay('showLabels', v)}
+          />
+
+          {mapDisplay.showChoropleth && (
+            <div className="pt-2 mt-2 border-t border-border">
+              <div className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase mb-1.5">
+                Choropleth Metric
+              </div>
+              <div className="space-y-1">
+                {CHOROPLETH_OPTIONS.map((opt) => (
+                  <label
+                    key={opt.value}
+                    className="flex items-center gap-2 cursor-pointer text-[12px] text-foreground"
+                  >
+                    <input
+                      type="radio"
+                      name="choropleth-metric"
+                      checked={mapDisplay.choroplethMetric === opt.value}
+                      onChange={() => updateMapDisplay('choroplethMetric', opt.value)}
+                      className="h-3.5 w-3.5 accent-primary"
+                    />
+                    <span>{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="District"
+          icon={<MapPin className="h-3 w-3" />}
+          count={filters.districts.length}
+        >
           <Input
             placeholder="Filter districts..."
             value={districtSearch}
@@ -157,10 +274,10 @@ export default function FilterPanel({
               <Checkbox
                 checked={filters.districts.includes(d.code)}
                 onCheckedChange={(checked) => {
-                  const newDists = checked
+                  const next = checked
                     ? [...filters.districts, d.code]
                     : filters.districts.filter((c) => c !== d.code);
-                  updateFilter('districts', newDists);
+                  updateFilter('districts', next);
                 }}
                 className="h-3.5 w-3.5"
               />
@@ -169,7 +286,7 @@ export default function FilterPanel({
           ))}
         </CollapsibleSection>
 
-        <CollapsibleSection title="Facility Type">
+        <CollapsibleSection title="Facility Type" count={filters.facilityTypes.length}>
           <CheckboxFilter
             options={filterOptions.facilityTypes}
             selected={filters.facilityTypes}
@@ -177,7 +294,7 @@ export default function FilterPanel({
           />
         </CollapsibleSection>
 
-        <CollapsibleSection title="Ownership">
+        <CollapsibleSection title="Ownership" count={filters.ownership.length}>
           <CheckboxFilter
             options={filterOptions.ownership}
             selected={filters.ownership}
@@ -185,7 +302,7 @@ export default function FilterPanel({
           />
         </CollapsibleSection>
 
-        <CollapsibleSection title="Origin">
+        <CollapsibleSection title="Origin" count={filters.origin.length}>
           <CheckboxFilter
             options={filterOptions.origin}
             selected={filters.origin}
@@ -193,7 +310,7 @@ export default function FilterPanel({
           />
         </CollapsibleSection>
 
-        <CollapsibleSection title="Category">
+        <CollapsibleSection title="Category" count={filters.category.length}>
           <CheckboxFilter
             options={filterOptions.category}
             selected={filters.category}
@@ -201,7 +318,7 @@ export default function FilterPanel({
           />
         </CollapsibleSection>
 
-        <CollapsibleSection title="Appointment">
+        <CollapsibleSection title="Appointment" count={filters.appointmentRequired.length}>
           <CheckboxFilter
             options={filterOptions.appointmentRequired}
             selected={filters.appointmentRequired}
@@ -209,7 +326,7 @@ export default function FilterPanel({
           />
         </CollapsibleSection>
 
-        <CollapsibleSection title="Cost">
+        <CollapsibleSection title="Cost" count={filters.cost.length}>
           <CheckboxFilter
             options={filterOptions.cost}
             selected={filters.cost}

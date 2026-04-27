@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useDataLoader } from '@/hooks/useDataLoader';
 import { useFilters } from '@/hooks/useFilters';
 import type { TabView } from '@/types/dashboard';
@@ -9,17 +10,58 @@ import InsightsTab from '@/components/dashboard/InsightsTab';
 import DataTable from '@/components/dashboard/DataTable';
 import DistrictSummaryCards from '@/components/dashboard/DistrictSummaryCards';
 import CompareTab from '@/components/dashboard/CompareTab';
-import { Map, BarChart3, Table2, GitCompare, Activity, Menu, X } from 'lucide-react';
+import PriorityDistricts from '@/components/dashboard/PriorityDistricts';
+import ActiveFilterChips from '@/components/dashboard/ActiveFilterChips';
+import { Map, BarChart3, Table2, GitCompare, Activity, Menu, X, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+const VALID_TABS: TabView[] = ['map', 'insights', 'table', 'compare'];
 
 export default function Index() {
-  const { districts, facilities, geojson, loading } = useDataLoader();
+  const { districts, facilities, geojson, loading, error, reload } = useDataLoader();
   const {
     filters, updateFilter, resetFilters,
+    mapDisplay, updateMapDisplay,
     selectedDistrict, setSelectedDistrict,
     activeDistricts, activeFacilities, filterOptions,
   } = useFilters(districts, facilities);
-  const [activeTab, setActiveTab] = useState<TabView>('map');
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = (searchParams.get('tab') as TabView) || 'map';
+  const [activeTab, setActiveTab] = useState<TabView>(
+    VALID_TABS.includes(initialTab) ? initialTab : 'map'
+  );
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile
+  useEffect(() => {
+    const check = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) setSidebarOpen(false);
+    };
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // Sync tab to URL
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    if (activeTab === 'map') next.delete('tab');
+    else next.set('tab', activeTab);
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  const districtNameLookup = useMemo(() => {
+    const m: Record<string, string> = {};
+    districts.forEach((d) => {
+      if (d.DIS_CODE) m[d.DIS_CODE] = d.DIS_NAME;
+    });
+    return m;
+  }, [districts]);
 
   if (loading) {
     return (
@@ -27,6 +69,24 @@ export default function Index() {
         <div className="text-center animate-fade-in">
           <Activity className="h-8 w-8 text-primary animate-pulse mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="text-center max-w-md animate-fade-in">
+          <AlertTriangle className="h-10 w-10 text-destructive mx-auto mb-3" />
+          <h2 className="text-base font-bold text-foreground mb-1">
+            Couldn't load dashboard data
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">{error}</p>
+          <Button onClick={reload} size="sm">
+            <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+            Try again
+          </Button>
         </div>
       </div>
     );
@@ -41,13 +101,14 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header - full width */}
-      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-3 md:px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <button
+              type="button"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+              aria-label={sidebarOpen ? 'Close filters' : 'Open filters'}
+              className="p-1.5 rounded-lg hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               {sidebarOpen ? (
                 <X className="h-4 w-4 text-muted-foreground" />
@@ -55,46 +116,68 @@ export default function Index() {
                 <Menu className="h-4 w-4 text-muted-foreground" />
               )}
             </button>
-            <div>
-              <h1 className="text-base font-bold text-foreground">
+            <div className="min-w-0">
+              <h1 className="text-sm md:text-base font-bold text-foreground truncate">
                 Mental Health Facility Explorer
               </h1>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[11px] md:text-xs text-muted-foreground truncate hidden sm:block">
                 District-wise decision-support dashboard for Bangladesh
               </p>
             </div>
           </div>
 
-          <div className="flex gap-1 bg-secondary rounded-lg p-0.5">
+          <nav
+            className="flex gap-1 bg-secondary rounded-lg p-0.5 overflow-x-auto"
+            aria-label="Dashboard sections"
+          >
             {tabs.map((t) => (
               <button
                 key={t.key}
+                type="button"
                 onClick={() => setActiveTab(t.key)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                aria-current={activeTab === t.key ? 'page' : undefined}
+                className={`flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 text-[11px] md:text-xs font-medium rounded-md transition-colors whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                   activeTab === t.key
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:bg-muted'
                 }`}
               >
                 <t.icon className="h-3.5 w-3.5" />
-                {t.label}
+                <span className="hidden sm:inline">{t.label}</span>
               </button>
             ))}
-          </div>
+          </nav>
         </div>
       </header>
 
-      <div className="flex flex-1">
-        {/* Sidebar */}
+      <div className="flex flex-1 relative">
+        {/* Mobile overlay */}
+        {isMobile && sidebarOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
+            onClick={() => setSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Sidebar — drawer on mobile, inline on desktop */}
         <aside
           className={`bg-card border-r border-border transition-all duration-300 flex-shrink-0 ${
-            sidebarOpen ? 'w-72' : 'w-0 overflow-hidden'
+            isMobile
+              ? `fixed top-[52px] bottom-0 left-0 z-50 w-[85%] max-w-[320px] shadow-xl ${
+                  sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                }`
+              : sidebarOpen
+              ? 'w-72'
+              : 'w-0 overflow-hidden'
           }`}
         >
-          <div className="h-[calc(100vh-52px)] sticky top-[52px] overflow-hidden">
+          <div className={`${isMobile ? 'h-full' : 'h-[calc(100vh-52px)] sticky top-[52px]'} overflow-hidden`}>
             <FilterPanel
               filters={filters}
               updateFilter={updateFilter}
+              mapDisplay={mapDisplay}
+              updateMapDisplay={updateMapDisplay}
               resetFilters={resetFilters}
               filterOptions={filterOptions}
               selectedDistrict={selectedDistrict}
@@ -103,41 +186,56 @@ export default function Index() {
           </div>
         </aside>
 
-        {/* Main */}
         <main className="flex-1 min-w-0">
-          <div className="p-4 space-y-4">
-            {/* KPIs */}
+          <div className="p-3 md:p-4 space-y-4">
+            <ActiveFilterChips
+              filters={filters}
+              selectedDistrict={selectedDistrict}
+              districtNameLookup={districtNameLookup}
+              updateFilter={updateFilter}
+              setSelectedDistrict={setSelectedDistrict}
+              resetFilters={resetFilters}
+            />
+
             <KPICards districts={activeDistricts} facilities={activeFacilities} />
 
-            {/* District Summary - only when multiple districts are active */}
             {activeDistricts.length >= 2 && (
               <DistrictSummaryCards districts={activeDistricts} />
             )}
 
-            {/* Tab Content */}
             {activeTab === 'map' && (
-              <DistrictMap
-                geojson={geojson}
-                districts={activeDistricts}
-                facilities={activeFacilities}
-                filters={filters}
-                updateFilter={updateFilter}
-                selectedDistrict={selectedDistrict}
-                onDistrictClick={setSelectedDistrict}
-              />
+              <>
+                <DistrictMap
+                  geojson={geojson}
+                  districts={activeDistricts}
+                  facilities={activeFacilities}
+                  mapDisplay={mapDisplay}
+                  selectedDistrict={selectedDistrict}
+                  onDistrictClick={setSelectedDistrict}
+                />
+                {activeDistricts.length >= 3 && (
+                  <PriorityDistricts districts={activeDistricts} />
+                )}
+              </>
             )}
 
             {activeTab === 'insights' && (
-              <InsightsTab districts={activeDistricts} facilities={activeFacilities} />
+              activeDistricts.length === 0 ? (
+                <div className="dashboard-panel p-10 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    No data matches the current filters. Adjust filters to see insights.
+                  </p>
+                </div>
+              ) : (
+                <InsightsTab districts={activeDistricts} facilities={activeFacilities} />
+              )
             )}
 
             {activeTab === 'table' && (
               <DataTable districts={activeDistricts} facilities={activeFacilities} />
             )}
 
-            {activeTab === 'compare' && (
-              <CompareTab districts={activeDistricts} />
-            )}
+            {activeTab === 'compare' && <CompareTab districts={activeDistricts} />}
           </div>
         </main>
       </div>
