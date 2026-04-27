@@ -8,8 +8,8 @@ interface DistrictInfoCardProps {
 
 function generateInsight(d: DistrictPop): string {
   const coverage = d.facilitiesPer100k || 0;
-  const pop = d.Population;
-  const poverty = d['Poverty Index'];
+  const pop = d.Population || 0;
+  const poverty = d['Poverty Index'] || 0;
 
   if (coverage < 0.1 && pop > 2000000) {
     return `${d.DIS_NAME} has very low facility coverage (${coverage.toFixed(2)}/100K) despite a large population of ${(pop / 1e6).toFixed(1)}M, indicating a critically underserved area.`;
@@ -26,30 +26,45 @@ function generateInsight(d: DistrictPop): string {
   return `${d.DIS_NAME} has ${d.total_facilities} facilities serving ${(pop / 1e6).toFixed(1)}M people (${coverage.toFixed(2)} per 100K).`;
 }
 
+const num = (v: any) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
+
 export default function DistrictInfoCard({ district, onClose }: DistrictInfoCardProps) {
   const rows = [
-    { label: 'Population', value: district.Population.toLocaleString() },
-    { label: 'Facilities', value: district.total_facilities },
-    { label: 'Per 100K', value: (district.facilitiesPer100k || 0).toFixed(2) },
-    { label: 'Pop/Facility', value: district.populationPerFacility ? Math.round(district.populationPerFacility).toLocaleString() : '-' },
-    { label: 'Poverty Index', value: district['Poverty Index'] },
-    { label: 'Literacy Rate', value: district.Literacy_rate + '%' },
-    { label: 'Urban', value: district.Urban_percent + '%' },
-    { label: 'Households', value: district.Total_households.toLocaleString() },
+    { label: 'Population', value: num(district.Population).toLocaleString() },
+    { label: 'Facilities', value: num(district.total_facilities) },
+    { label: 'Per 100K', value: num(district.facilitiesPer100k).toFixed(2) },
+    {
+      label: 'Pop/Facility',
+      value: district.populationPerFacility
+        ? Math.round(district.populationPerFacility).toLocaleString()
+        : '—',
+    },
+    { label: 'Poverty Index', value: num(district['Poverty Index']) },
+    { label: 'Literacy Rate', value: `${num(district.Literacy_rate)}%` },
+    { label: 'Urban', value: `${num(district.Urban_percent)}%` },
+    {
+      label: 'Households',
+      value: district.Total_households != null ? num(district.Total_households).toLocaleString() : '—',
+    },
   ];
 
   const insight = generateInsight(district);
 
   return (
-    <div className="absolute bottom-3 left-3 z-[1000] w-64 bg-card/95 backdrop-blur-md border border-border rounded-xl shadow-lg p-3 text-xs">
+    <div className="absolute bottom-3 left-3 z-[1000] w-64 max-w-[calc(100%-1.5rem)] bg-card/95 backdrop-blur-md border border-border rounded-xl shadow-lg p-3 text-xs">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="font-bold text-sm text-foreground">{district.DIS_NAME}</h3>
-        <button onClick={onClose} className="p-0.5 rounded hover:bg-muted transition-colors">
+        <h3 className="font-bold text-sm text-foreground truncate pr-2">{district.DIS_NAME}</h3>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close district info"
+          className="p-0.5 rounded hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
           <X className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
       </div>
       <div className="space-y-1 mb-2">
-        {rows.map(r => (
+        {rows.map((r) => (
           <div key={r.label} className="flex justify-between">
             <span className="text-muted-foreground">{r.label}</span>
             <span className="font-semibold text-foreground">{r.value}</span>
