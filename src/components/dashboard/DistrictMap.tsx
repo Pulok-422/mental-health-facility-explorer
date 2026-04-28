@@ -666,26 +666,22 @@ export default function DistrictMap({
       className="map-container relative"
       style={{ height: isFullscreen ? '100vh' : '560px' }}
     >
-      {/* Basemap switcher */}
-      <div className="map-basemap-panel absolute top-3 left-3 z-[1000] rounded-2xl border border-border bg-card/95 p-2 shadow-xl backdrop-blur-md flex gap-2">
-        {(['light', 'street', 'satellite'] as const).map((mode) => (
-          <button
-            key={mode}
-            type="button"
-            onClick={() => setBasemap(mode)}
-            className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              basemap === mode
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-background text-foreground border-border hover:bg-muted'
-            }`}
-          >
-            {mode === 'light' ? 'Light' : mode === 'street' ? 'Street' : 'Satellite'}
-          </button>
-        ))}
-      </div>
-
-      {/* Action stack — Locate / Reset / Fullscreen */}
-      <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-2">
+      {/* Top-right vertical control stack: Layers · Locate · Reset · Fullscreen · Basemap */}
+      <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-2 items-end">
+        <button
+          type="button"
+          onClick={() => setLayersOpen((o) => !o)}
+          aria-label="Map layers"
+          aria-expanded={layersOpen}
+          title="Map layers"
+          className={`h-9 w-9 rounded-xl border shadow-lg backdrop-blur-sm flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+            layersOpen
+              ? 'bg-primary text-primary-foreground border-primary'
+              : 'bg-card/95 text-foreground border-border hover:bg-muted'
+          }`}
+        >
+          <Layers className="h-4 w-4" />
+        </button>
         <button
           type="button"
           onClick={handleLocateUser}
@@ -713,7 +709,114 @@ export default function DistrictMap({
         >
           {isFullscreen ? <Minimize className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
         </button>
+
+        {/* Vertical basemap switcher */}
+        <div className="rounded-xl border border-border bg-card/95 p-1 shadow-lg backdrop-blur-md flex flex-col gap-1">
+          {(['light', 'street', 'satellite'] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setBasemap(mode)}
+              title={mode}
+              className={`rounded-lg px-2 py-1 text-[10px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                basemap === mode
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-foreground hover:bg-muted'
+              }`}
+            >
+              {mode === 'light' ? 'Light' : mode === 'street' ? 'Street' : 'Satellite'}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* Map Layers popover — anchored to top-right, opens beside the stack */}
+      {layersOpen && (
+        <div className="absolute top-3 right-[60px] z-[1001] w-[220px] rounded-2xl border border-border bg-card/95 shadow-xl backdrop-blur-md p-3 animate-fade-in">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <Layers className="h-3.5 w-3.5 text-primary" />
+              Map Layers
+            </span>
+            <button
+              type="button"
+              onClick={() => setLayersOpen(false)}
+              className="text-[11px] text-muted-foreground hover:text-foreground"
+              aria-label="Close map layers"
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="space-y-1">
+            {[
+              { key: 'showChoropleth' as const, label: 'Choropleth' },
+              { key: 'showMarkers' as const, label: 'Facility Markers' },
+              { key: 'showHeatmap' as const, label: 'Heatmap' },
+              { key: 'showBubbles' as const, label: 'Bubble Overlay' },
+              { key: 'showLabels' as const, label: 'District Labels' },
+            ].map((row) => {
+              const checked = mapDisplay[row.key] as boolean;
+              return (
+                <label
+                  key={row.key}
+                  className="flex items-center justify-between gap-2 cursor-pointer py-1"
+                >
+                  <span className="text-[12px] text-foreground leading-none">{row.label}</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={checked}
+                    aria-label={row.label}
+                    onClick={() => updateMapDisplay(row.key, !checked)}
+                    className={`relative h-5 w-9 rounded-full transition-colors shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                      checked ? 'bg-primary' : 'bg-muted'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                        checked ? 'translate-x-4' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </button>
+                </label>
+              );
+            })}
+          </div>
+
+          {mapDisplay.showChoropleth && (
+            <div className="pt-2 mt-2 border-t border-border">
+              <div className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase mb-1.5">
+                Choropleth Metric
+              </div>
+              <div className="space-y-1">
+                {([
+                  { value: 'facilities', label: 'Total Facilities' },
+                  { value: 'population', label: 'Population' },
+                  { value: 'facilitiesPer100k', label: 'Facilities per 100K' },
+                  { value: 'povertyIndex', label: 'Poverty Index' },
+                  { value: 'literacyRate', label: 'Literacy Rate' },
+                  { value: 'urbanPercent', label: 'Urban Percent' },
+                ] as { value: ChoroplethMetric; label: string }[]).map((opt) => (
+                  <label
+                    key={opt.value}
+                    className="flex items-center gap-2 cursor-pointer text-[12px] text-foreground"
+                  >
+                    <input
+                      type="radio"
+                      name="map-choropleth-metric"
+                      checked={mapDisplay.choroplethMetric === opt.value}
+                      onChange={() => updateMapDisplay('choroplethMetric', opt.value)}
+                      className="h-3.5 w-3.5 accent-primary"
+                    />
+                    <span>{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Legend — Fix #21 collapsible */}
       {mapDisplay.showChoropleth && breaks.length > 0 && (
