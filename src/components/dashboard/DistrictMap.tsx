@@ -156,6 +156,7 @@ interface DistrictMapProps {
   districts: DistrictPop[];
   facilities: Facility[];
   mapDisplay: MapDisplay;
+  updateMapDisplay: <K extends keyof MapDisplay>(key: K, value: MapDisplay[K]) => void;
   selectedDistrict: string | null;
   onDistrictClick: (code: string | null) => void;
 }
@@ -165,6 +166,7 @@ export default function DistrictMap({
   districts,
   facilities,
   mapDisplay,
+  updateMapDisplay,
   selectedDistrict,
   onDistrictClick,
 }: DistrictMapProps) {
