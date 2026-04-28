@@ -769,13 +769,13 @@ export default function DistrictMap({
                     aria-checked={checked}
                     aria-label={row.label}
                     onClick={() => updateMapDisplay(row.key, !checked)}
-                    className={`relative h-4 w-7 rounded-full transition-colors shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                    className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                       checked ? 'bg-primary' : 'bg-muted'
                     }`}
                   >
                     <span
-                      className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${
-                        checked ? 'translate-x-3.5' : 'translate-x-0.5'
+                      className={`inline-block h-3 w-3 rounded-full bg-white shadow transition-transform ${
+                        checked ? 'translate-x-3' : 'translate-x-0.5'
                       }`}
                     />
                   </button>
