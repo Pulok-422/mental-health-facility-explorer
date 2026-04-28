@@ -210,6 +210,7 @@ export default function Index() {
                   districts={activeDistricts}
                   facilities={activeFacilities}
                   mapDisplay={mapDisplay}
+                  updateMapDisplay={updateMapDisplay}
                   selectedDistrict={selectedDistrict}
                   onDistrictClick={setSelectedDistrict}
                 />
