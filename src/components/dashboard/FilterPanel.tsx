@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Filters, MapDisplay, ChoroplethMetric } from '@/types/dashboard';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, RotateCcw, MapPin, Layers, ChevronDown, ChevronRight, Map as MapIcon } from 'lucide-react';
+import { Search, RotateCcw, MapPin, Layers, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface FilterPanelProps {
@@ -196,64 +196,6 @@ export default function FilterPanel({
             </div>
           </div>
         )}
-
-        {/* Map Layers — moved into sidebar */}
-        <CollapsibleSection
-          title="Map Layers"
-          icon={<MapIcon className="h-3 w-3" />}
-          defaultOpen
-        >
-          <ToggleRow
-            label="Choropleth"
-            checked={mapDisplay.showChoropleth}
-            onChange={(v) => updateMapDisplay('showChoropleth', v)}
-          />
-          <ToggleRow
-            label="Facility Markers"
-            checked={mapDisplay.showMarkers}
-            onChange={(v) => updateMapDisplay('showMarkers', v)}
-          />
-          <ToggleRow
-            label="Heatmap"
-            checked={mapDisplay.showHeatmap}
-            onChange={(v) => updateMapDisplay('showHeatmap', v)}
-          />
-          <ToggleRow
-            label="Bubble Overlay"
-            checked={mapDisplay.showBubbles}
-            onChange={(v) => updateMapDisplay('showBubbles', v)}
-          />
-          <ToggleRow
-            label="District Labels"
-            checked={mapDisplay.showLabels}
-            onChange={(v) => updateMapDisplay('showLabels', v)}
-          />
-
-          {mapDisplay.showChoropleth && (
-            <div className="pt-2 mt-2 border-t border-border">
-              <div className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase mb-1.5">
-                Choropleth Metric
-              </div>
-              <div className="space-y-1">
-                {CHOROPLETH_OPTIONS.map((opt) => (
-                  <label
-                    key={opt.value}
-                    className="flex items-center gap-2 cursor-pointer text-[12px] text-foreground"
-                  >
-                    <input
-                      type="radio"
-                      name="choropleth-metric"
-                      checked={mapDisplay.choroplethMetric === opt.value}
-                      onChange={() => updateMapDisplay('choroplethMetric', opt.value)}
-                      className="h-3.5 w-3.5 accent-primary"
-                    />
-                    <span>{opt.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-        </CollapsibleSection>
 
         <CollapsibleSection
           title="District"
