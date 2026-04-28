@@ -666,8 +666,27 @@ export default function DistrictMap({
       className="map-container relative"
       style={{ height: isFullscreen ? '100vh' : '560px' }}
     >
-      {/* Top-right vertical control stack: Layers · Locate · Reset · Fullscreen · Basemap */}
-      <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-2 items-end">
+      {/* Top-left horizontal basemap switcher */}
+      <div className="absolute top-3 left-3 z-[1000] rounded-xl border border-border bg-card/95 p-1 shadow-lg backdrop-blur-md flex flex-row gap-1">
+        {(['light', 'street', 'satellite'] as const).map((mode) => (
+          <button
+            key={mode}
+            type="button"
+            onClick={() => setBasemap(mode)}
+            title={mode}
+            className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              basemap === mode
+                ? 'bg-primary text-primary-foreground'
+                : 'text-foreground hover:bg-muted'
+            }`}
+          >
+            {mode === 'light' ? 'Light' : mode === 'street' ? 'Street' : 'Satellite'}
+          </button>
+        ))}
+      </div>
+
+      {/* Top-right horizontal control row: Layers · Locate · Reset · Fullscreen */}
+      <div className="absolute top-3 right-3 z-[1000] flex flex-row gap-2 items-center">
         <button
           type="button"
           onClick={() => setLayersOpen((o) => !o)}
@@ -709,30 +728,11 @@ export default function DistrictMap({
         >
           {isFullscreen ? <Minimize className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
         </button>
-
-        {/* Vertical basemap switcher */}
-        <div className="rounded-xl border border-border bg-card/95 p-1 shadow-lg backdrop-blur-md flex flex-col gap-1">
-          {(['light', 'street', 'satellite'] as const).map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => setBasemap(mode)}
-              title={mode}
-              className={`rounded-lg px-2 py-1 text-[10px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                basemap === mode
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-foreground hover:bg-muted'
-              }`}
-            >
-              {mode === 'light' ? 'Light' : mode === 'street' ? 'Street' : 'Satellite'}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* Map Layers popover — anchored to top-right, opens beside the stack */}
+      {/* Map Layers popover — drops below the top-right control row */}
       {layersOpen && (
-        <div className="absolute top-3 right-[60px] z-[1001] w-[220px] rounded-2xl border border-border bg-card/95 shadow-xl backdrop-blur-md p-3 animate-fade-in">
+        <div className="absolute top-14 right-3 z-[1001] w-[240px] rounded-2xl border border-border bg-card/95 shadow-xl backdrop-blur-md p-3 animate-fade-in">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
               <Layers className="h-3.5 w-3.5 text-primary" />
@@ -741,7 +741,7 @@ export default function DistrictMap({
             <button
               type="button"
               onClick={() => setLayersOpen(false)}
-              className="text-[11px] text-muted-foreground hover:text-foreground"
+              className="text-[14px] leading-none text-muted-foreground hover:text-foreground"
               aria-label="Close map layers"
             >
               ×
