@@ -730,25 +730,25 @@ export default function DistrictMap({
         </button>
       </div>
 
-      {/* Map Layers popover — drops below the top-right control row */}
+      {/* Map Layers popover — compact, drops below the top-right control row */}
       {layersOpen && (
-        <div className="absolute top-14 right-3 z-[1001] w-[240px] rounded-2xl border border-border bg-card/95 shadow-xl backdrop-blur-md p-3 animate-fade-in">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-              <Layers className="h-3.5 w-3.5 text-primary" />
+        <div className="absolute top-14 right-3 z-[1001] w-[200px] rounded-2xl border border-border bg-card/95 shadow-xl backdrop-blur-md p-2.5 animate-fade-in">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-semibold text-foreground flex items-center gap-1">
+              <Layers className="h-3 w-3 text-primary" />
               Map Layers
             </span>
             <button
               type="button"
               onClick={() => setLayersOpen(false)}
-              className="text-[14px] leading-none text-muted-foreground hover:text-foreground"
+              className="text-[13px] leading-none text-muted-foreground hover:text-foreground"
               aria-label="Close map layers"
             >
               ×
             </button>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {[
               { key: 'showChoropleth' as const, label: 'Choropleth' },
               { key: 'showMarkers' as const, label: 'Facility Markers' },
@@ -760,22 +760,22 @@ export default function DistrictMap({
               return (
                 <label
                   key={row.key}
-                  className="flex items-center justify-between gap-2 cursor-pointer py-1"
+                  className="flex items-center justify-between gap-2 cursor-pointer py-1 min-w-0"
                 >
-                  <span className="text-[12px] text-foreground leading-none">{row.label}</span>
+                  <span className="text-[11px] text-foreground leading-tight truncate min-w-0">{row.label}</span>
                   <button
                     type="button"
                     role="switch"
                     aria-checked={checked}
                     aria-label={row.label}
                     onClick={() => updateMapDisplay(row.key, !checked)}
-                    className={`relative h-5 w-9 rounded-full transition-colors shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                    className={`relative h-4 w-7 rounded-full transition-colors shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                       checked ? 'bg-primary' : 'bg-muted'
                     }`}
                   >
                     <span
-                      className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                        checked ? 'translate-x-4' : 'translate-x-0.5'
+                      className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${
+                        checked ? 'translate-x-3.5' : 'translate-x-0.5'
                       }`}
                     />
                   </button>
@@ -785,11 +785,11 @@ export default function DistrictMap({
           </div>
 
           {mapDisplay.showChoropleth && (
-            <div className="pt-2 mt-2 border-t border-border">
-              <div className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase mb-1.5">
+            <div className="pt-2 mt-1.5 border-t border-border">
+              <div className="text-[9px] font-semibold tracking-wide text-muted-foreground uppercase mb-1">
                 Choropleth Metric
               </div>
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {([
                   { value: 'facilities', label: 'Total Facilities' },
                   { value: 'population', label: 'Population' },
@@ -800,16 +800,16 @@ export default function DistrictMap({
                 ] as { value: ChoroplethMetric; label: string }[]).map((opt) => (
                   <label
                     key={opt.value}
-                    className="flex items-center gap-2 cursor-pointer text-[12px] text-foreground"
+                    className="flex items-center gap-1.5 cursor-pointer text-[11px] text-foreground py-0.5"
                   >
                     <input
                       type="radio"
                       name="map-choropleth-metric"
                       checked={mapDisplay.choroplethMetric === opt.value}
                       onChange={() => updateMapDisplay('choroplethMetric', opt.value)}
-                      className="h-3.5 w-3.5 accent-primary"
+                      className="h-3 w-3 accent-primary shrink-0"
                     />
-                    <span>{opt.label}</span>
+                    <span className="truncate">{opt.label}</span>
                   </label>
                 ))}
               </div>
