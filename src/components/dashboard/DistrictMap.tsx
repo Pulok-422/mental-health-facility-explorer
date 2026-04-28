@@ -13,10 +13,10 @@ import type {
   BubbleMetric,
 } from '@/types/dashboard';
 import DistrictInfoCard from './DistrictInfoCard';
-import { LocateFixed, Expand, Minimize, Home, ChevronDown, ChevronUp } from 'lucide-react';
+import { LocateFixed, Expand, Minimize, Home, ChevronDown, ChevronUp, Layers } from 'lucide-react';
 
 const BANGLADESH_CENTER: [number, number] = [23.7, 90.35];
-const BANGLADESH_ZOOM = 8.5;
+const BANGLADESH_ZOOM = 9.5;
 const BANGLADESH_BOUNDS: L.LatLngBoundsExpression = [
   [20.5, 88.0],
   [26.7, 92.7],
