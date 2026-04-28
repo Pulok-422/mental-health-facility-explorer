@@ -278,12 +278,12 @@ export default function FilterPanel({
       </div>
 
       <div className="px-4 pb-4 pt-2">
-        <div className="border-t border-border/60 pt-3 text-center">
+        <div className="border-t border-border pt-3 text-center">
           <a
             href="https://hasibulahmedpulok.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block text-[10px] text-muted-foreground/75 hover:text-primary transition-colors"
+            className="inline-block text-xs font-medium text-foreground hover:text-primary transition-colors"
           >
             Developed by Hasibul Ahmed Pulok
           </a>
