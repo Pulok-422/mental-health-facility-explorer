@@ -10,7 +10,6 @@ import InsightsTab from '@/components/dashboard/InsightsTab';
 import DataTable from '@/components/dashboard/DataTable';
 import DistrictSummaryCards from '@/components/dashboard/DistrictSummaryCards';
 import CompareTab from '@/components/dashboard/CompareTab';
-import PriorityDistricts from '@/components/dashboard/PriorityDistricts';
 import ActiveFilterChips from '@/components/dashboard/ActiveFilterChips';
 import { Map, BarChart3, Table2, GitCompare, Activity, Menu, X, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -214,9 +213,6 @@ export default function Index() {
                   selectedDistrict={selectedDistrict}
                   onDistrictClick={setSelectedDistrict}
                 />
-                {activeDistricts.length >= 3 && (
-                  <PriorityDistricts districts={activeDistricts} />
-                )}
               </>
             )}
 
