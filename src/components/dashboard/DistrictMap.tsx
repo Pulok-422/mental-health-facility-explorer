@@ -186,6 +186,7 @@ export default function DistrictMap({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [legendOpen, setLegendOpen] = useState(true);
+  const [layersOpen, setLayersOpen] = useState(false);
 
   const districtMap = useMemo(() => {
     const m = new Map<string, DistrictPop>();
