@@ -153,11 +153,7 @@ export default function FilterPanel({
   return (
     <div className="h-full flex flex-col min-h-0 bg-background">
       <div className="flex-1 min-h-0 overflow-y-auto p-4 pb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Layers className="h-4 w-4 text-primary" />
-            Data Filters
-          </h2>
+        <div className="flex items-center justify-end mb-3">
           <Button
             variant="ghost"
             size="sm"
