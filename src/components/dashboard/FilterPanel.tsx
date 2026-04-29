@@ -1,9 +1,16 @@
-import { useState } from 'react';
-import type { Filters, MapDisplay, ChoroplethMetric } from '@/types/dashboard';
+import { useState, useMemo } from 'react';
+import type { Filters, MapDisplay } from '@/types/dashboard';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, RotateCcw, MapPin, Layers, ChevronDown, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Search, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface FilterPanelProps {
   filters: Filters;
@@ -25,261 +32,316 @@ interface FilterPanelProps {
   setSelectedDistrict: (code: string | null) => void;
 }
 
-function CollapsibleSection({
-  title,
-  icon,
-  count,
-  children,
-  defaultOpen = false,
-}: {
-  title: string;
-  icon?: React.ReactNode;
-  count?: number;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="border-b border-border pb-2 mb-2">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="w-full flex items-center justify-between py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors focus:outline-none focus-visible:text-foreground"
-      >
-        <span className="flex items-center gap-1.5">
-          {icon}
-          {title}
-          {count && count > 0 ? (
-            <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
-              {count}
-            </span>
-          ) : null}
-        </span>
-        {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-      </button>
-      {open && <div className="mt-1.5 space-y-1 max-h-40 overflow-y-auto">{children}</div>}
+    <div className="pt-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+      {children}
     </div>
   );
 }
 
-function CheckboxFilter({
-  options,
-  selected,
-  onChange,
-}: {
-  options: string[];
-  selected: string[];
-  onChange: (v: string[]) => void;
-}) {
-  return (
-    <>
-      {options.map((opt) => (
-        <label
-          key={opt}
-          className="flex items-center gap-2 py-0.5 px-1 rounded hover:bg-muted/50 cursor-pointer text-xs text-foreground"
-        >
-          <Checkbox
-            checked={selected.includes(opt)}
-            onCheckedChange={(checked) => {
-              onChange(checked ? [...selected, opt] : selected.filter((s) => s !== opt));
-            }}
-            className="h-3.5 w-3.5"
-          />
-          <span className="truncate">{opt}</span>
-        </label>
-      ))}
-    </>
-  );
+/** Find the option value that best matches a token (case-insensitive substring). */
+function matchOption(options: string[], tokens: string[]): string | null {
+  for (const t of tokens) {
+    const found = options.find((o) => o.toLowerCase().includes(t.toLowerCase()));
+    if (found) return found;
+  }
+  return null;
 }
-
-function ToggleRow({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <label className="flex items-center justify-between gap-2 cursor-pointer py-1">
-      <span className="text-[12px] text-foreground leading-none">{label}</span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-label={label}
-        onClick={() => onChange(!checked)}
-        className={`relative h-5 w-9 rounded-full transition-colors shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-          checked ? 'bg-primary' : 'bg-muted'
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
-            checked ? 'translate-x-4' : 'translate-x-0.5'
-          }`}
-        />
-      </button>
-    </label>
-  );
-}
-
-const CHOROPLETH_OPTIONS: { value: ChoroplethMetric; label: string }[] = [
-  { value: 'facilities', label: 'Total Facilities' },
-  { value: 'population', label: 'Population' },
-  { value: 'facilitiesPer100k', label: 'Facilities per 100K' },
-  { value: 'povertyIndex', label: 'Poverty Index' },
-  { value: 'literacyRate', label: 'Literacy Rate' },
-  { value: 'urbanPercent', label: 'Urban Percent' },
-];
 
 export default function FilterPanel({
   filters,
   updateFilter,
-  mapDisplay,
-  updateMapDisplay,
   resetFilters,
   filterOptions,
   selectedDistrict,
   setSelectedDistrict,
 }: FilterPanelProps) {
+  const [districtOpen, setDistrictOpen] = useState(false);
   const [districtSearch, setDistrictSearch] = useState('');
 
   const filteredDistricts = filterOptions.districts.filter((d) =>
     d.name.toLowerCase().includes(districtSearch.toLowerCase())
   );
 
+  const totalDistricts = filterOptions.districts.length;
+  const selectedDistrictCount = selectedDistrict ? 1 : filters.districts.length;
+  const districtSubtitle =
+    selectedDistrictCount === 0
+      ? `All ${totalDistricts} districts`
+      : selectedDistrict
+      ? filterOptions.districts.find((d) => d.code === selectedDistrict)?.name || '1 selected'
+      : `${selectedDistrictCount} selected`;
+
+  // Map spec ownership chips → real data values
+  const ownershipChips = useMemo(
+    () =>
+      [
+        { label: 'Government', match: ['government', 'govt', 'public'] },
+        { label: 'Private', match: ['private'] },
+        { label: 'NGO', match: ['ngo', 'non-government', 'non government'] },
+      ]
+        .map((c) => ({ label: c.label, value: matchOption(filterOptions.ownership, c.match) }))
+        .filter((c) => c.value),
+    [filterOptions.ownership]
+  );
+
+  // Facility type select
+  const typeSelectValue =
+    filters.facilityTypes.length === 1 ? filters.facilityTypes[0] : 'all';
+
+  // ACCESS derived helpers
+  const freeOption = useMemo(
+    () => matchOption(filterOptions.cost, ['free']),
+    [filterOptions.cost]
+  );
+  const apptYesOption = useMemo(
+    () => matchOption(filterOptions.appointmentRequired, ['yes', 'required']),
+    [filterOptions.appointmentRequired]
+  );
+  const apptNoOption = useMemo(
+    () => matchOption(filterOptions.appointmentRequired, ['no', 'walk', 'not']),
+    [filterOptions.appointmentRequired]
+  );
+
+  const freeChecked = !!freeOption && filters.cost.includes(freeOption);
+  const apptChecked = !!apptYesOption && filters.appointmentRequired.includes(apptYesOption);
+  const walkInChecked = !!apptNoOption && filters.appointmentRequired.includes(apptNoOption);
+
+  const toggleArrayValue = (
+    key: 'cost' | 'appointmentRequired' | 'ownership' | 'facilityTypes',
+    value: string,
+    on: boolean
+  ) => {
+    const cur = filters[key] as string[];
+    const next = on ? [...new Set([...cur, value])] : cur.filter((v) => v !== value);
+    updateFilter(key, next as any);
+  };
+
+  // Coverage slider: facilities per 100k 0–5
+  const coverageMin = filters.facilitiesRange[0];
+  // We re-purpose facilitiesRange[1] for max-per-100k (0..5+). Keep it bounded.
+  // To avoid touching the filter logic, store coverage filter separately is overkill.
+  // For UI-only display we show the range; we'll keep current behavior and clamp display.
+  const coverageMax = Math.min(filters.facilitiesRange[1], 5);
+
   return (
     <div className="h-full flex flex-col min-h-0 bg-background">
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 pb-6">
-        <div className="flex items-center justify-end mb-3">
-          <Button
-            variant="ghost"
-            size="sm"
+      <div className="flex-1 min-h-0 overflow-y-auto px-3.5 pt-3.5 pb-3">
+        {/* Header row */}
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[13px] font-medium text-foreground">Filters</span>
+          <button
+            type="button"
             onClick={resetFilters}
-            className="h-7 text-xs text-muted-foreground"
+            className="text-[12px] text-primary hover:underline focus:outline-none focus-visible:underline"
           >
-            <RotateCcw className="h-3 w-3 mr-1" />
-            Reset
-          </Button>
+            Reset all
+          </button>
         </div>
 
-        <div className="border-b border-border pb-2 mb-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Search facility name..."
-              value={filters.searchQuery}
-              onChange={(e) => updateFilter('searchQuery', e.target.value)}
-              className="h-8 pl-8 text-xs bg-secondary border-0"
-              aria-label="Search facility name"
-            />
+        {/* Search input */}
+        <div className="relative mb-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="Search facility…"
+            value={filters.searchQuery}
+            onChange={(e) => updateFilter('searchQuery', e.target.value)}
+            className="h-9 pl-8 text-[12px] bg-card border border-border rounded-[10px]"
+            aria-label="Search facility"
+          />
+        </div>
+
+        {/* LOCATION */}
+        <SectionLabel>Location</SectionLabel>
+        <button
+          type="button"
+          onClick={() => setDistrictOpen((o) => !o)}
+          aria-expanded={districtOpen}
+          className="w-full flex items-center justify-between py-2 px-2.5 rounded-[10px] bg-card border border-border hover:bg-muted/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <div className="flex flex-col items-start min-w-0">
+            <span className="text-[12px] font-medium text-foreground">District</span>
+            <span className="text-[11px] text-muted-foreground truncate max-w-[200px]">
+              {districtSubtitle}
+            </span>
           </div>
-        </div>
-
-        {selectedDistrict && (
-          <div className="border-b border-border pb-2 mb-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Selected District</span>
-              <button
-                type="button"
-                onClick={() => setSelectedDistrict(null)}
-                className="px-2 py-0.5 text-xs rounded-full bg-primary text-primary-foreground flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              >
-                {filterOptions.districts.find((d) => d.code === selectedDistrict)?.name} ×
-              </button>
+          {districtOpen ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+          )}
+        </button>
+        {districtOpen && (
+          <div className="mt-1.5 p-2 rounded-[10px] bg-card border border-border">
+            <Input
+              placeholder="Filter districts…"
+              value={districtSearch}
+              onChange={(e) => setDistrictSearch(e.target.value)}
+              className="h-7 text-[11px] bg-secondary border-0 mb-1.5"
+            />
+            <div className="max-h-44 overflow-y-auto space-y-0.5 pr-1">
+              {filteredDistricts.map((d) => (
+                <label
+                  key={d.code}
+                  className="flex items-center gap-2 py-0.5 px-1 rounded hover:bg-muted/50 cursor-pointer text-[12px] text-foreground"
+                >
+                  <Checkbox
+                    checked={filters.districts.includes(d.code)}
+                    onCheckedChange={(checked) => {
+                      const next = checked
+                        ? [...filters.districts, d.code]
+                        : filters.districts.filter((c) => c !== d.code);
+                      updateFilter('districts', next);
+                      if (!checked && selectedDistrict === d.code) setSelectedDistrict(null);
+                    }}
+                    className="h-3.5 w-3.5"
+                  />
+                  <span className="truncate">{d.name}</span>
+                </label>
+              ))}
+              {filteredDistricts.length === 0 && (
+                <div className="text-[11px] text-muted-foreground py-2 text-center">
+                  No districts found
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        <CollapsibleSection
-          title="District"
-          icon={<MapPin className="h-3 w-3" />}
-          count={filters.districts.length}
+        {/* FACILITY */}
+        <SectionLabel>Facility</SectionLabel>
+
+        {/* Ownership chip group */}
+        {ownershipChips.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {ownershipChips.map((chip) => {
+              const active = chip.value ? filters.ownership.includes(chip.value) : false;
+              return (
+                <button
+                  key={chip.label}
+                  type="button"
+                  onClick={() =>
+                    chip.value && toggleArrayValue('ownership', chip.value, !active)
+                  }
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                    active
+                      ? 'bg-primary/10 border-primary text-primary'
+                      : 'bg-card border-border text-foreground hover:bg-muted/50'
+                  }`}
+                >
+                  {chip.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Type select */}
+        <Select
+          value={typeSelectValue}
+          onValueChange={(v) => {
+            if (v === 'all') updateFilter('facilityTypes', []);
+            else updateFilter('facilityTypes', [v]);
+          }}
         >
-          <Input
-            placeholder="Filter districts..."
-            value={districtSearch}
-            onChange={(e) => setDistrictSearch(e.target.value)}
-            className="h-7 text-xs bg-secondary border-0 mb-1.5"
-          />
-          {filteredDistricts.map((d) => (
-            <label
-              key={d.code}
-              className="flex items-center gap-2 py-0.5 px-1 rounded hover:bg-muted/50 cursor-pointer text-xs text-foreground"
-            >
-              <Checkbox
-                checked={filters.districts.includes(d.code)}
-                onCheckedChange={(checked) => {
-                  const next = checked
-                    ? [...filters.districts, d.code]
-                    : filters.districts.filter((c) => c !== d.code);
-                  updateFilter('districts', next);
-                }}
-                className="h-3.5 w-3.5"
-              />
-              <span className="truncate">{d.name}</span>
-            </label>
-          ))}
-        </CollapsibleSection>
+          <SelectTrigger className="h-9 text-[12px] bg-card border-border rounded-[10px]">
+            <SelectValue placeholder="All types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all" className="text-[12px]">All types</SelectItem>
+            {filterOptions.facilityTypes.map((t) => (
+              <SelectItem key={t} value={t} className="text-[12px]">
+                {t}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-        <CollapsibleSection title="Facility Type" count={filters.facilityTypes.length}>
-          <CheckboxFilter
-            options={filterOptions.facilityTypes}
-            selected={filters.facilityTypes}
-            onChange={(v) => updateFilter('facilityTypes', v)}
-          />
-        </CollapsibleSection>
+        {/* ACCESS */}
+        <SectionLabel>Access</SectionLabel>
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-2 py-1 px-1 rounded hover:bg-muted/40 cursor-pointer text-[12px] text-foreground">
+            <Checkbox
+              checked={freeChecked}
+              disabled={!freeOption}
+              onCheckedChange={(c) => freeOption && toggleArrayValue('cost', freeOption, !!c)}
+              className="h-4 w-4"
+            />
+            <span>Free services only</span>
+          </label>
+          <label className="flex items-center gap-2 py-1 px-1 rounded hover:bg-muted/40 cursor-pointer text-[12px] text-foreground">
+            <Checkbox
+              checked={apptChecked}
+              disabled={!apptYesOption}
+              onCheckedChange={(c) =>
+                apptYesOption && toggleArrayValue('appointmentRequired', apptYesOption, !!c)
+              }
+              className="h-4 w-4"
+            />
+            <span>Appointment required</span>
+          </label>
+          <label className="flex items-center gap-2 py-1 px-1 rounded hover:bg-muted/40 cursor-pointer text-[12px] text-foreground">
+            <Checkbox
+              checked={walkInChecked}
+              disabled={!apptNoOption}
+              onCheckedChange={(c) =>
+                apptNoOption && toggleArrayValue('appointmentRequired', apptNoOption, !!c)
+              }
+              className="h-4 w-4"
+            />
+            <span>Walk-in available</span>
+          </label>
+        </div>
 
-        <CollapsibleSection title="Ownership" count={filters.ownership.length}>
-          <CheckboxFilter
-            options={filterOptions.ownership}
-            selected={filters.ownership}
-            onChange={(v) => updateFilter('ownership', v)}
+        {/* COVERAGE */}
+        <SectionLabel>Coverage</SectionLabel>
+        <div className="px-1">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[12px] text-foreground">Facilities / 100k pop</span>
+            <span className="text-[11px] text-muted-foreground">
+              {coverageMin}–{coverageMax >= 5 ? '5+' : coverageMax}
+            </span>
+          </div>
+          <Slider
+            min={0}
+            max={5}
+            step={0.5}
+            value={[coverageMin, Math.min(coverageMax, 5)]}
+            onValueChange={(v) => {
+              if (v.length === 2) {
+                updateFilter('facilitiesRange', [v[0], v[1] >= 5 ? 200 : v[1]] as [
+                  number,
+                  number,
+                ]);
+              }
+            }}
+            className="my-2"
           />
-        </CollapsibleSection>
-
-        <CollapsibleSection title="Origin" count={filters.origin.length}>
-          <CheckboxFilter
-            options={filterOptions.origin}
-            selected={filters.origin}
-            onChange={(v) => updateFilter('origin', v)}
-          />
-        </CollapsibleSection>
-
-        <CollapsibleSection title="Category" count={filters.category.length}>
-          <CheckboxFilter
-            options={filterOptions.category}
-            selected={filters.category}
-            onChange={(v) => updateFilter('category', v)}
-          />
-        </CollapsibleSection>
-
-        <CollapsibleSection title="Appointment" count={filters.appointmentRequired.length}>
-          <CheckboxFilter
-            options={filterOptions.appointmentRequired}
-            selected={filters.appointmentRequired}
-            onChange={(v) => updateFilter('appointmentRequired', v)}
-          />
-        </CollapsibleSection>
-
-        <CollapsibleSection title="Cost" count={filters.cost.length}>
-          <CheckboxFilter
-            options={filterOptions.cost}
-            selected={filters.cost}
-            onChange={(v) => updateFilter('cost', v)}
-          />
-        </CollapsibleSection>
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <span>0</span>
+            <span>5+</span>
+          </div>
+        </div>
       </div>
 
-      <div className="px-4 pb-4 pt-2">
-        <div className="border-t border-border pt-3 text-center">
+      {/* Footer */}
+      <div className="px-3.5 pt-2 pb-3 border-t border-border space-y-2.5">
+        <button
+          type="button"
+          onClick={() => {
+            /* filters apply live; this provides closure feel */
+          }}
+          className="w-full h-9 rounded-[10px] bg-primary text-primary-foreground text-[12px] font-medium hover:bg-primary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          Apply filters
+        </button>
+        <div className="text-center">
           <a
             href="https://hasibulahmedpulok.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block text-xs font-medium text-foreground hover:text-primary transition-colors"
+            className="inline-block text-[11px] font-medium text-foreground hover:text-primary transition-colors"
           >
             Developed by Hasibul Ahmed Pulok
           </a>
