@@ -92,9 +92,9 @@ export default function Index() {
   }
 
   const tabs = [
-    { key: 'map' as const, label: 'Map Explorer', icon: Map },
+    { key: 'map' as const, label: 'Map', icon: Map },
     { key: 'insights' as const, label: 'Insights', icon: BarChart3 },
-    { key: 'table' as const, label: 'Data Table', icon: Table2 },
+    { key: 'table' as const, label: 'Data table', icon: Table2 },
     { key: 'compare' as const, label: 'Compare', icon: GitCompare },
   ];
 
@@ -126,25 +126,29 @@ export default function Index() {
           </div>
 
           <nav
-            className="flex gap-1 bg-secondary rounded-lg p-0.5 overflow-x-auto"
+            className="flex gap-0.5 bg-muted/60 rounded-[12px] p-1.5 border border-border/60 overflow-x-auto"
             aria-label="Dashboard sections"
           >
-            {tabs.map((t) => (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => setActiveTab(t.key)}
-                aria-current={activeTab === t.key ? 'page' : undefined}
-                className={`flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 text-[11px] md:text-xs font-medium rounded-md transition-colors whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                  activeTab === t.key
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted'
-                }`}
-              >
-                <t.icon className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{t.label}</span>
-              </button>
-            ))}
+            {tabs.map((t) => {
+              const isActive = activeTab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setActiveTab(t.key)}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] rounded-[8px] whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-[background-color,border-color] duration-150 ${
+                    isActive
+                      ? 'bg-card border border-border text-foreground font-medium shadow-sm'
+                      : 'border border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                  style={{ padding: '7px 14px' }}
+                >
+                  <t.icon style={{ width: 13, height: 13 }} />
+                  <span className="hidden sm:inline">{t.label}</span>
+                </button>
+              );
+            })}
           </nav>
         </div>
       </header>
