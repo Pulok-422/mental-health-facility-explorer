@@ -72,20 +72,22 @@ export default function ActiveFilterChips({
     });
   }
 
-  if (chips.length === 0) return null;
+  if (chips.length === 0 && resultCount === undefined) return null;
 
   return (
     <div className="flex items-center flex-wrap gap-1.5 px-3 py-2 rounded-lg bg-muted/40 border border-border">
       <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-      <span className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mr-1">
-        Active ({chips.length})
-      </span>
+      {chips.length > 0 && (
+        <span className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mr-1">
+          Active ({chips.length})
+        </span>
+      )}
       {chips.slice(0, 12).map((c) => (
         <button
           key={c.id}
           type="button"
           onClick={c.onRemove}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-card border border-border text-foreground hover:bg-secondary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="inline-flex items-center gap-1 px-[9px] py-[4px] rounded-[20px] text-[11px] bg-card border border-border text-foreground hover:bg-secondary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <span className="max-w-[140px] truncate">{c.label}</span>
           <X className="h-3 w-3 text-muted-foreground" />
@@ -94,13 +96,20 @@ export default function ActiveFilterChips({
       {chips.length > 12 && (
         <span className="text-[11px] text-muted-foreground">+{chips.length - 12} more</span>
       )}
-      <button
-        type="button"
-        onClick={resetFilters}
-        className="ml-auto text-[11px] font-semibold text-primary hover:underline focus:outline-none"
-      >
-        Clear all
-      </button>
+      {resultCount !== undefined && (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-[20px] text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20">
+          {resultCount.toLocaleString()} results
+        </span>
+      )}
+      {chips.length > 0 && (
+        <button
+          type="button"
+          onClick={resetFilters}
+          className="ml-auto text-[11px] font-semibold text-primary hover:underline focus:outline-none"
+        >
+          Clear all
+        </button>
+      )}
     </div>
   );
 }
