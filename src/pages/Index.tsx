@@ -185,21 +185,22 @@ export default function Index() {
               filterOptions={filterOptions}
               selectedDistrict={selectedDistrict}
               setSelectedDistrict={setSelectedDistrict}
+              chipsSlot={
+                <ActiveFilterChips
+                  filters={filters}
+                  selectedDistrict={selectedDistrict}
+                  districtNameLookup={districtNameLookup}
+                  updateFilter={updateFilter}
+                  setSelectedDistrict={setSelectedDistrict}
+                  resetFilters={resetFilters}
+                />
+              }
             />
           </div>
         </aside>
 
         <main className="flex-1 min-w-0">
           <div className="p-3 md:p-4 space-y-4">
-            <ActiveFilterChips
-              filters={filters}
-              selectedDistrict={selectedDistrict}
-              districtNameLookup={districtNameLookup}
-              updateFilter={updateFilter}
-              setSelectedDistrict={setSelectedDistrict}
-              resetFilters={resetFilters}
-              resultCount={activeFacilities.length}
-            />
 
             <KPICards districts={activeDistricts} facilities={activeFacilities} />
 
