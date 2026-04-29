@@ -8,6 +8,7 @@ interface Props {
   updateFilter: <K extends keyof Filters>(key: K, value: Filters[K]) => void;
   setSelectedDistrict: (code: string | null) => void;
   resetFilters: () => void;
+  resultCount?: number;
 }
 
 interface Chip {
