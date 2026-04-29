@@ -1,8 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type ReactNode } from 'react';
 import type { Filters, MapDisplay } from '@/types/dashboard';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Slider } from '@/components/ui/slider';
 import {
   Select,
   SelectContent,
@@ -30,6 +29,7 @@ interface FilterPanelProps {
   };
   selectedDistrict: string | null;
   setSelectedDistrict: (code: string | null) => void;
+  chipsSlot?: ReactNode;
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -56,6 +56,7 @@ export default function FilterPanel({
   filterOptions,
   selectedDistrict,
   setSelectedDistrict,
+  chipsSlot,
 }: FilterPanelProps) {
   const [districtOpen, setDistrictOpen] = useState(false);
   const [districtSearch, setDistrictSearch] = useState('');
