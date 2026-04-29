@@ -294,48 +294,11 @@ export default function FilterPanel({
           </label>
         </div>
 
-        {/* COVERAGE */}
-        <SectionLabel>Coverage</SectionLabel>
-        <div className="px-1">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[12px] text-foreground">Facilities / 100k pop</span>
-            <span className="text-[11px] text-muted-foreground">
-              {coverageMin}–{coverageMax >= 5 ? '5+' : coverageMax}
-            </span>
-          </div>
-          <Slider
-            min={0}
-            max={5}
-            step={0.5}
-            value={[coverageMin, Math.min(coverageMax, 5)]}
-            onValueChange={(v) => {
-              if (v.length === 2) {
-                updateFilter('facilitiesRange', [v[0], v[1] >= 5 ? 200 : v[1]] as [
-                  number,
-                  number,
-                ]);
-              }
-            }}
-            className="my-2"
-          />
-          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-            <span>0</span>
-            <span>5+</span>
-          </div>
-        </div>
       </div>
 
       {/* Footer */}
       <div className="px-3.5 pt-2 pb-3 border-t border-border space-y-2.5">
-        <button
-          type="button"
-          onClick={() => {
-            /* filters apply live; this provides closure feel */
-          }}
-          className="w-full h-9 rounded-[10px] bg-primary text-primary-foreground text-[12px] font-medium hover:bg-primary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          Apply filters
-        </button>
+        {chipsSlot}
         <div className="text-center">
           <a
             href="https://hasibulahmedpulok.vercel.app/"
