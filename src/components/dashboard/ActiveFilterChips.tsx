@@ -24,6 +24,7 @@ export default function ActiveFilterChips({
   updateFilter,
   setSelectedDistrict,
   resetFilters,
+  resultCount,
 }: Props) {
   const chips: Chip[] = [];
 
