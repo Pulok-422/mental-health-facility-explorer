@@ -198,6 +198,7 @@ export default function Index() {
               updateFilter={updateFilter}
               setSelectedDistrict={setSelectedDistrict}
               resetFilters={resetFilters}
+              resultCount={activeFacilities.length}
             />
 
             <KPICards districts={activeDistricts} facilities={activeFacilities} />
