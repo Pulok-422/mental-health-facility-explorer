@@ -119,12 +119,7 @@ export default function FilterPanel({
     updateFilter(key, next as any);
   };
 
-  // Coverage slider: facilities per 100k 0–5
-  const coverageMin = filters.facilitiesRange[0];
-  // We re-purpose facilitiesRange[1] for max-per-100k (0..5+). Keep it bounded.
-  // To avoid touching the filter logic, store coverage filter separately is overkill.
-  // For UI-only display we show the range; we'll keep current behavior and clamp display.
-  const coverageMax = Math.min(filters.facilitiesRange[1], 5);
+
 
   return (
     <div className="h-full flex flex-col min-h-0 bg-background">
