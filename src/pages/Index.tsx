@@ -14,7 +14,6 @@ import ActiveFilterChips from '@/components/dashboard/ActiveFilterChips';
 import { Map, BarChart3, Table2, GitCompare, Menu, X, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LoadingScreen from '@/components/LoadingScreen';
-import appLogo from '@/assets/app-logo.png';
 
 const VALID_TABS: TabView[] = ['map', 'insights', 'table', 'compare'];
 
