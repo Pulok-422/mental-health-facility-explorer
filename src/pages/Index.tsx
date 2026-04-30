@@ -110,6 +110,13 @@ export default function Index() {
                 <Menu className="h-4 w-4 text-muted-foreground" />
               )}
             </button>
+            <img
+              src={appLogo}
+              alt="Mental Health Facility Explorer logo"
+              width={32}
+              height={32}
+              className="h-7 w-7 md:h-8 md:w-8 object-contain shrink-0"
+            />
             <div className="min-w-0">
               <h1 className="text-sm md:text-base font-bold text-foreground truncate">
                 Mental Health Facility Explorer
@@ -180,6 +187,8 @@ export default function Index() {
               filterOptions={filterOptions}
               selectedDistrict={selectedDistrict}
               setSelectedDistrict={setSelectedDistrict}
+              facilities={facilities}
+              districtNameLookup={districtNameLookup}
               chipsSlot={
                 <ActiveFilterChips
                   filters={filters}
