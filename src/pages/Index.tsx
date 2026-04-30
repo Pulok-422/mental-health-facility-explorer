@@ -11,8 +11,10 @@ import DataTable from '@/components/dashboard/DataTable';
 import DistrictSummaryCards from '@/components/dashboard/DistrictSummaryCards';
 import CompareTab from '@/components/dashboard/CompareTab';
 import ActiveFilterChips from '@/components/dashboard/ActiveFilterChips';
-import { Map, BarChart3, Table2, GitCompare, Activity, Menu, X, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Map, BarChart3, Table2, GitCompare, Menu, X, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import LoadingScreen from '@/components/LoadingScreen';
+import appLogo from '@/assets/app-logo.png';
 
 const VALID_TABS: TabView[] = ['map', 'insights', 'table', 'compare'];
 
@@ -63,14 +65,7 @@ export default function Index() {
   }, [districts]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center animate-fade-in">
-          <Activity className="h-8 w-8 text-primary animate-pulse mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (error) {
