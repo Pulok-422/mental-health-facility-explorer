@@ -60,6 +60,8 @@ export default function FilterPanel({
   selectedDistrict,
   setSelectedDistrict,
   chipsSlot,
+  facilities,
+  districtNameLookup,
 }: FilterPanelProps) {
   const [districtOpen, setDistrictOpen] = useState(false);
   const [districtSearch, setDistrictSearch] = useState('');
@@ -68,11 +70,10 @@ export default function FilterPanel({
     d.name.toLowerCase().includes(districtSearch.toLowerCase())
   );
 
-  const totalDistricts = filterOptions.districts.length;
   const selectedDistrictCount = selectedDistrict ? 1 : filters.districts.length;
   const districtSubtitle =
     selectedDistrictCount === 0
-      ? `All ${totalDistricts} districts`
+      ? null
       : selectedDistrict
       ? filterOptions.districts.find((d) => d.code === selectedDistrict)?.name || '1 selected'
       : `${selectedDistrictCount} selected`;
