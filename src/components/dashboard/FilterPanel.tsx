@@ -1,5 +1,5 @@
 import { useState, useMemo, type ReactNode } from 'react';
-import type { Filters, MapDisplay } from '@/types/dashboard';
+import type { Filters, MapDisplay, Facility } from '@/types/dashboard';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -9,7 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import FacilitySearch from './FacilitySearch';
 
 interface FilterPanelProps {
   filters: Filters;
