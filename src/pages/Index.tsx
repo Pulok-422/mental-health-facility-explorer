@@ -14,7 +14,6 @@ import ActiveFilterChips from '@/components/dashboard/ActiveFilterChips';
 import { Map, BarChart3, Table2, GitCompare, Menu, X, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LoadingScreen from '@/components/LoadingScreen';
-import appLogo from '@/assets/app-logo.png';
 
 const VALID_TABS: TabView[] = ['map', 'insights', 'table', 'compare'];
 
@@ -110,13 +109,6 @@ export default function Index() {
                 <Menu className="h-4 w-4 text-muted-foreground" />
               )}
             </button>
-            <img
-              src={appLogo}
-              alt="Mental Health Facility Explorer logo"
-              width={32}
-              height={32}
-              className="h-7 w-7 md:h-8 md:w-8 object-contain shrink-0"
-            />
             <div className="min-w-0">
               <h1 className="text-sm md:text-base font-bold text-foreground truncate">
                 Mental Health Facility Explorer
