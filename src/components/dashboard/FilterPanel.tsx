@@ -31,6 +31,8 @@ interface FilterPanelProps {
   selectedDistrict: string | null;
   setSelectedDistrict: (code: string | null) => void;
   chipsSlot?: ReactNode;
+  facilities: Facility[];
+  districtNameLookup: Record<string, string>;
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
