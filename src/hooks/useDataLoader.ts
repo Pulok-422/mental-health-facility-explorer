@@ -29,9 +29,12 @@ export function useDataLoader(): DashboardData {
       const cacheBustedUrl = `${url}?v=${Date.now()}`;
 
       const r = await fetch(cacheBustedUrl, {
+        method: 'GET',
         cache: 'no-store',
         headers: {
-          'Cache-Control': 'no-cache',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
         },
       });
 
@@ -50,15 +53,23 @@ export function useDataLoader(): DashboardData {
         const enriched = (d as DistrictPop[]).map((row) => ({
           ...row,
           facilitiesPer100k:
-            row.Population > 0 ? (row.total_facilities / row.Population) * 100000 : 0,
+            row.Population > 0
+              ? (row.total_facilities / row.Population) * 100000
+              : 0,
           populationPerFacility:
-            row.total_facilities > 0 ? row.Population / row.total_facilities : 0,
+            row.total_facilities > 0
+              ? row.Population / row.total_facilities
+              : 0,
           householdsPerFacility:
-            row.total_facilities > 0 ? row.Total_households / row.total_facilities : 0,
+            row.total_facilities > 0
+              ? row.Total_households / row.total_facilities
+              : 0,
         }));
 
+        console.log('Facilities loaded:', f.length, new Date().toISOString());
+
         setDistricts(enriched);
-        setFacilities(f);
+        setFacilities(f as Facility[]);
         setGeojson(g);
         setLoading(false);
       })
