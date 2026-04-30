@@ -140,20 +140,22 @@ export default function FilterPanel({
           </button>
         </div>
 
-        {/* Search input */}
-        <div className="relative mb-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-          <Input
-            placeholder="Search facility…"
+        {/* Search input with suggestions */}
+        <div className="mb-1">
+          <FacilitySearch
             value={filters.searchQuery}
-            onChange={(e) => updateFilter('searchQuery', e.target.value)}
-            className="h-9 pl-8 text-[12px] bg-card border border-border rounded-[10px]"
-            aria-label="Search facility"
+            onChange={(v) => updateFilter('searchQuery', v)}
+            facilities={facilities}
+            districtNameLookup={districtNameLookup}
+            onSelectFacility={(f) => {
+              updateFilter('searchQuery', f.facility_name);
+              if (f.DIS_CODE) setSelectedDistrict(f.DIS_CODE);
+            }}
           />
         </div>
 
-        {/* LOCATION */}
-        <SectionLabel>Location</SectionLabel>
+        {/* DISTRICT */}
+        <SectionLabel>District</SectionLabel>
         <button
           type="button"
           onClick={() => setDistrictOpen((o) => !o)}
@@ -162,9 +164,11 @@ export default function FilterPanel({
         >
           <div className="flex flex-col items-start min-w-0">
             <span className="text-[12px] font-medium text-foreground">District</span>
-            <span className="text-[11px] text-muted-foreground truncate max-w-[200px]">
-              {districtSubtitle}
-            </span>
+            {districtSubtitle && (
+              <span className="text-[11px] text-muted-foreground truncate max-w-[200px]">
+                {districtSubtitle}
+              </span>
+            )}
           </div>
           {districtOpen ? (
             <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
