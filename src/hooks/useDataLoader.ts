@@ -26,7 +26,15 @@ export function useDataLoader(): DashboardData {
     setError(null);
 
     const fetchJson = async (url: string) => {
-      const r = await fetch(url);
+      const cacheBustedUrl = `${url}?v=${Date.now()}`;
+
+      const r = await fetch(cacheBustedUrl, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
+
       if (!r.ok) throw new Error(`Failed to load ${url} (${r.status})`);
       return r.json();
     };
@@ -38,12 +46,17 @@ export function useDataLoader(): DashboardData {
     ])
       .then(([d, f, g]) => {
         if (cancelled) return;
+
         const enriched = (d as DistrictPop[]).map((row) => ({
           ...row,
-          facilitiesPer100k: row.Population > 0 ? (row.total_facilities / row.Population) * 100000 : 0,
-          populationPerFacility: row.total_facilities > 0 ? row.Population / row.total_facilities : 0,
-          householdsPerFacility: row.total_facilities > 0 ? row.Total_households / row.total_facilities : 0,
+          facilitiesPer100k:
+            row.Population > 0 ? (row.total_facilities / row.Population) * 100000 : 0,
+          populationPerFacility:
+            row.total_facilities > 0 ? row.Population / row.total_facilities : 0,
+          householdsPerFacility:
+            row.total_facilities > 0 ? row.Total_households / row.total_facilities : 0,
         }));
+
         setDistricts(enriched);
         setFacilities(f);
         setGeojson(g);
