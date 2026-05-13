@@ -14,6 +14,9 @@ import ActiveFilterChips from '@/components/dashboard/ActiveFilterChips';
 import { Map, BarChart3, Table2, GitCompare, Menu, X, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LoadingScreen from '@/components/LoadingScreen';
+import ExportButtons from '@/components/dashboard/ExportButtons';
+import CitationFooter from '@/components/dashboard/CitationFooter';
+import FeedbackWidget from '@/components/dashboard/FeedbackWidget';
 
 const VALID_TABS: TabView[] = ['map', 'insights', 'table', 'compare'];
 
@@ -198,6 +201,8 @@ export default function Index() {
         <main className="flex-1 min-w-0">
           <div className="p-3 md:p-4 space-y-4">
 
+            <ExportButtons facilities={activeFacilities} districts={activeDistricts} />
+
             <KPICards districts={activeDistricts} facilities={activeFacilities} />
 
             {activeDistricts.length >= 2 && (
@@ -238,6 +243,9 @@ export default function Index() {
           </div>
         </main>
       </div>
+
+      <CitationFooter />
+      <FeedbackWidget />
     </div>
   );
 }

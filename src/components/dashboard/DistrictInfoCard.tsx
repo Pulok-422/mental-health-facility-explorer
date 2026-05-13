@@ -1,8 +1,10 @@
-import type { DistrictPop } from '@/types/dashboard';
+import type { DistrictPop, Facility } from '@/types/dashboard';
 import { X } from 'lucide-react';
+import { avgCompleteness, completenessClasses, COMPLETENESS_TOTAL } from '@/lib/dataCompleteness';
 
 interface DistrictInfoCardProps {
   district: DistrictPop;
+  facilities?: Facility[];
   onClose: () => void;
 }
 
@@ -28,7 +30,10 @@ function generateInsight(d: DistrictPop): string {
 
 const num = (v: any) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
 
-export default function DistrictInfoCard({ district, onClose }: DistrictInfoCardProps) {
+export default function DistrictInfoCard({ district, facilities = [], onClose }: DistrictInfoCardProps) {
+  const { avg, n } = avgCompleteness(facilities);
+  const avgRounded = Math.round(avg);
+  const completenessClass = completenessClasses(avgRounded);
   const rows = [
     { label: 'Population', value: num(district.Population).toLocaleString() },
     { label: 'Facilities', value: num(district.total_facilities) },
@@ -74,6 +79,13 @@ export default function DistrictInfoCard({ district, onClose }: DistrictInfoCard
       <div className="border-t border-border pt-2 mt-2">
         <p className="text-[10px] leading-relaxed text-muted-foreground italic">💡 {insight}</p>
       </div>
+      {n > 0 && (
+        <div className="mt-2">
+          <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${completenessClass}`}>
+            Avg. data completeness: {avg.toFixed(1)}/{COMPLETENESS_TOTAL} fields across {n} facilities
+          </span>
+        </div>
+      )}
     </div>
   );
 }

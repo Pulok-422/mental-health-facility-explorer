@@ -14,6 +14,8 @@ import type {
 } from '@/types/dashboard';
 import DistrictInfoCard from './DistrictInfoCard';
 import { LocateFixed, Expand, Minimize, Home, ChevronDown, ChevronUp, Layers } from 'lucide-react';
+import { facilityCompleteness, completenessClasses, COMPLETENESS_TOTAL } from '@/lib/dataCompleteness';
+import MetricInfoTooltip, { METRIC_TOOLTIPS } from './MetricInfoTooltip';
 
 const BANGLADESH_CENTER: [number, number] = [23.7, 90.35];
 const BANGLADESH_ZOOM = 9.5;
@@ -434,6 +436,8 @@ export default function DistrictMap({
     facilities.forEach((f) => {
       if (f.latitude && f.longitude) {
         const marker = L.marker([f.latitude, f.longitude], { icon: getMentalHealthFacilityIcon() });
+        const score = facilityCompleteness(f);
+        const badgeClass = completenessClasses(score);
         marker.bindPopup(
           `<div class="facility-popup">
             <h3>${f.facility_name}</h3>
@@ -444,6 +448,9 @@ export default function DistrictMap({
               <span class="popup-label">Cost</span><span class="popup-value">${f.cost || '-'}</span>
               <span class="popup-label">Ownership</span><span class="popup-value">${f.ownership || '-'}</span>
               ${f.mobile_contact_number ? `<span class="popup-label">Phone</span><span class="popup-value">${f.mobile_contact_number}</span>` : ''}
+            </div>
+            <div style="margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;">
+              <span class="${badgeClass}" style="display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:9999px;">Data: ${score}/${COMPLETENESS_TOTAL} fields complete</span>
             </div>
           </div>`,
           { maxWidth: 300 }
@@ -797,7 +804,15 @@ export default function DistrictMap({
                   { value: 'povertyIndex', label: 'Poverty Index' },
                   { value: 'literacyRate', label: 'Literacy Rate' },
                   { value: 'urbanPercent', label: 'Urban Percent' },
-                ] as { value: ChoroplethMetric; label: string }[]).map((opt) => (
+                ] as { value: ChoroplethMetric; label: string }[]).map((opt) => {
+                  const tipLabel =
+                    opt.label === 'Facilities per 100K'
+                      ? 'Facilities per 100K Population'
+                      : opt.label === 'Urban Percent'
+                      ? 'Urban Percent'
+                      : opt.label;
+                  const hasTip = !!METRIC_TOOLTIPS[tipLabel];
+                  return (
                   <label
                     key={opt.value}
                     className="flex items-center gap-1.5 cursor-pointer text-[11px] text-foreground py-0.5"
@@ -810,8 +825,9 @@ export default function DistrictMap({
                       className="h-3 w-3 accent-primary shrink-0"
                     />
                     <span className="truncate">{opt.label}</span>
+                    {hasTip && <MetricInfoTooltip label={tipLabel} />}
                   </label>
-                ))}
+                );})}
               </div>
             </div>
           )}
@@ -874,7 +890,11 @@ export default function DistrictMap({
       )}
 
       {selectedDistrictData && (
-        <DistrictInfoCard district={selectedDistrictData} onClose={() => onDistrictClick(null)} />
+        <DistrictInfoCard
+          district={selectedDistrictData}
+          facilities={facilities.filter((f) => f.DIS_CODE === selectedDistrictData.DIS_CODE)}
+          onClose={() => onDistrictClick(null)}
+        />
       )}
 
       {locationError && (
