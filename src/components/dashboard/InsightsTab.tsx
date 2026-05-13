@@ -13,6 +13,9 @@ import {
   ReferenceLine,
   Cell,
   LabelList,
+  PieChart,
+  Pie,
+  Legend,
 } from 'recharts';
 
 const CHART_COLORS = {
@@ -24,6 +27,17 @@ const CHART_COLORS = {
   mutedGrid: '#e5e7eb',
   mutedLine: '#94a3b8',
 };
+
+const DONUT_PALETTE = [
+  '#3b82f6',
+  '#14b8a6',
+  '#f59e0b',
+  '#8b5cf6',
+  '#ef4444',
+  '#22c55e',
+  '#f97316',
+  '#06b6d4',
+];
 
 interface InsightsProps {
   districts: DistrictPop[];
@@ -181,6 +195,83 @@ function RankingGrid({
   );
 }
 
+// ── Lollipop chart for Facilities by District ─────────────────────────────────
+function LollipopChart({
+  data,
+}: {
+  data: { name: string; shortName: string; facilities: number; per100k: number }[];
+}) {
+  const max = Math.max(...data.map((d) => d.facilities), 1);
+
+  return (
+    <div className="flex h-full flex-col justify-between gap-1 overflow-hidden py-1">
+      {data.map((d, i) => {
+        const pct = (d.facilities / max) * 100;
+        return (
+          <div key={d.name} className="group flex items-center gap-2">
+            {/* rank */}
+            <span className="w-5 shrink-0 text-right text-[10px] font-semibold text-muted-foreground">
+              {i + 1}
+            </span>
+            {/* label */}
+            <span
+              className="w-[88px] shrink-0 truncate text-right text-[10px] text-foreground"
+              title={d.name}
+            >
+              {d.shortName}
+            </span>
+            {/* track + lollipop */}
+            <div className="relative flex flex-1 items-center">
+              <div className="h-[2px] w-full rounded-full bg-muted/60" />
+              <div
+                className="absolute h-[2px] rounded-full bg-blue-400 transition-all"
+                style={{ width: `${pct}%` }}
+              />
+              <div
+                className="absolute h-3 w-3 rounded-full border-2 border-blue-500 bg-card transition-all"
+                style={{ left: `calc(${pct}% - 6px)` }}
+              />
+            </div>
+            {/* value */}
+            <span className="w-7 shrink-0 text-left text-[10px] font-bold text-foreground">
+              {d.facilities}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Donut chart for Ownership ─────────────────────────────────────────────────
+const RADIAN = Math.PI / 180;
+function CustomDonutLabel({
+  cx,
+  cy,
+  midAngle,
+  innerRadius,
+  outerRadius,
+  percent,
+}: any) {
+  if (percent < 0.05) return null;
+  const r = innerRadius + (outerRadius - innerRadius) * 0.55;
+  const x = cx + r * Math.cos(-midAngle * RADIAN);
+  const y = cy + r * Math.sin(-midAngle * RADIAN);
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#fff"
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize={10}
+      fontWeight={700}
+    >
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+}
+
 export default function InsightsTab({ districts, facilities }: InsightsProps) {
   const districtBars = useMemo(
     () =>
@@ -292,16 +383,6 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
 
   const ownershipDist = useMemo(
     () => countBy(facilities, (f) => f.ownership),
-    [facilities]
-  );
-
-  const costDist = useMemo(
-    () => countBy(facilities, (f) => f.cost),
-    [facilities]
-  );
-
-  const categoryDist = useMemo(
-    () => countBy(facilities, (f) => f.category_adult_child_both),
     [facilities]
   );
 
@@ -456,54 +537,22 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
         />
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+          {/* ── Lollipop: Facilities by District (Top 15) ── */}
           <ChartCard
             title="Facilities by District (Top 15)"
-            insight="Shows where facilities are concentrated across districts."
-            height={300}
+            insight="Ranked by total facility count — hover a row for coverage detail."
+            height={340}
             className="xl:col-span-5"
           >
-            <ResponsiveContainer>
-              <BarChart data={districtBars} margin={{ left: 0, right: 10, top: 5, bottom: 45 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.mutedGrid} strokeOpacity={0.6} />
-                <XAxis
-                  dataKey="shortName"
-                  tick={{ fontSize: 9 }}
-                  angle={-35}
-                  textAnchor="end"
-                  interval={0}
-                  height={60}
-                />
-                <YAxis
-                  tick={{ fontSize: 10 }}
-                  label={{ value: 'Count', angle: -90, position: 'insideLeft', fontSize: 10 }}
-                />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null;
-                    const d = payload[0].payload;
-                    return (
-                      <div className="rounded-lg border border-border bg-card p-2 text-xs shadow-md">
-                        <div className="font-semibold text-foreground">{d.name}</div>
-                        <div className="text-muted-foreground">Facilities: {d.facilities}</div>
-                        <div className="text-muted-foreground">Coverage: {d.per100k} per 100K</div>
-                      </div>
-                    );
-                  }}
-                />
-                <Bar dataKey="facilities" radius={[6, 6, 0, 0]}>
-                  {districtBars.map((entry) => (
-                    <Cell key={entry.name} fill={CHART_COLORS.neutral} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <LollipopChart data={districtBars} />
           </ChartCard>
 
           <div className="grid grid-cols-1 gap-4 xl:col-span-7 xl:grid-cols-2">
+            {/* ── Facility Type Distribution ── */}
             <ChartCard
               title="Facility Type Distribution"
               insight="Horizontal bars make smaller categories easier to compare."
-              height={300}
+              height={340}
             >
               <ResponsiveContainer>
                 <BarChart
@@ -526,29 +575,55 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
               </ResponsiveContainer>
             </ChartCard>
 
+            {/* ── Donut: Ownership Distribution ── */}
             <ChartCard
               title="Ownership Distribution"
-              insight="Government and private facilities shown as directly comparable bars."
-              height={300}
+              insight="Share of facilities by ownership type."
+              height={340}
             >
               <ResponsiveContainer>
-                <BarChart
-                  data={ownershipDist}
-                  layout="vertical"
-                  margin={{ left: 10, right: 20, top: 5, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.mutedGrid} strokeOpacity={0.6} />
-                  <XAxis type="number" tick={{ fontSize: 10 }} />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    width={90}
-                    tick={{ fontSize: 10 }}
-                    tickFormatter={(v) => truncateLabel(v, 16)}
+                <PieChart>
+                  <Pie
+                    data={ownershipDist}
+                    cx="50%"
+                    cy="45%"
+                    innerRadius="40%"
+                    outerRadius="68%"
+                    paddingAngle={3}
+                    dataKey="value"
+                    labelLine={false}
+                    label={CustomDonutLabel}
+                  >
+                    {ownershipDist.map((_, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={DONUT_PALETTE[index % DONUT_PALETTE.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const d = payload[0];
+                      const total = ownershipDist.reduce((s, i) => s + i.value, 0);
+                      const pct = total ? ((d.value as number / total) * 100).toFixed(1) : '0';
+                      return (
+                        <div className="rounded-lg border border-border bg-card p-2 text-xs shadow-md">
+                          <div className="font-semibold text-foreground">{d.name}</div>
+                          <div className="text-muted-foreground">
+                            {d.value} facilities ({pct}%)
+                          </div>
+                        </div>
+                      );
+                    }}
                   />
-                  <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                  <Bar dataKey="value" fill={CHART_COLORS.accent} radius={[0, 6, 6, 0]} />
-                </BarChart>
+                  <Legend
+                    iconType="circle"
+                    iconSize={8}
+                    wrapperStyle={{ fontSize: 10, paddingTop: 8 }}
+                    formatter={(value) => truncateLabel(value, 20)}
+                  />
+                </PieChart>
               </ResponsiveContainer>
             </ChartCard>
           </div>
@@ -558,7 +633,7 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
       <section className="space-y-3">
         <SectionHeader
           title="Access & Inequality"
-          subtitle="These views help explain whether poverty, cost, and service targeting align with access patterns."
+          subtitle="These views help explain whether poverty and service targeting align with access patterns."
         />
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
@@ -614,52 +689,6 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
                   )}
                 />
               </ScatterChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          <ChartCard
-            title="Cost Distribution"
-            insight="Shows the spread of free versus paid mental health services."
-            height={285}
-            className="xl:col-span-6"
-          >
-            <ResponsiveContainer>
-              <BarChart data={costDist} margin={{ left: 0, right: 10, top: 5, bottom: 25 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.mutedGrid} strokeOpacity={0.6} />
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                <YAxis
-                  tick={{ fontSize: 10 }}
-                  label={{ value: 'Count', angle: -90, position: 'insideLeft', fontSize: 10 }}
-                />
-                <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                <Bar dataKey="value" fill={CHART_COLORS.accent} radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          <ChartCard
-            title="Category Distribution"
-            insight="Service categories by target patient group."
-            height={285}
-            className="xl:col-span-6"
-          >
-            <ResponsiveContainer>
-              <BarChart data={categoryDist} margin={{ left: 0, right: 10, top: 5, bottom: 40 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.mutedGrid} strokeOpacity={0.6} />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 10 }}
-                  angle={-20}
-                  textAnchor="end"
-                  height={55}
-                />
-                <YAxis
-                  tick={{ fontSize: 10 }}
-                  label={{ value: 'Count', angle: -90, position: 'insideLeft', fontSize: 10 }}
-                />
-                <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                <Bar dataKey="value" fill={CHART_COLORS.neutral} radius={[6, 6, 0, 0]} />
-              </BarChart>
             </ResponsiveContainer>
           </ChartCard>
         </div>
