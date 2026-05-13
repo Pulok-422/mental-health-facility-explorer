@@ -201,6 +201,8 @@ export default function Index() {
         <main className="flex-1 min-w-0">
           <div className="p-3 md:p-4 space-y-4">
 
+            <ExportButtons facilities={activeFacilities} districts={activeDistricts} />
+
             <KPICards districts={activeDistricts} facilities={activeFacilities} />
 
             {activeDistricts.length >= 2 && (
