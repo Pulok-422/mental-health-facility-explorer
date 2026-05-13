@@ -30,7 +30,10 @@ function generateInsight(d: DistrictPop): string {
 
 const num = (v: any) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
 
-export default function DistrictInfoCard({ district, onClose }: DistrictInfoCardProps) {
+export default function DistrictInfoCard({ district, facilities = [], onClose }: DistrictInfoCardProps) {
+  const { avg, n } = avgCompleteness(facilities);
+  const avgRounded = Math.round(avg);
+  const completenessClass = completenessClasses(avgRounded);
   const rows = [
     { label: 'Population', value: num(district.Population).toLocaleString() },
     { label: 'Facilities', value: num(district.total_facilities) },
