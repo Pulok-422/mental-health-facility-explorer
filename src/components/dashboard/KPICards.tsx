@@ -77,7 +77,10 @@ export default function KPICards({ districts, facilities }: KPICardsProps) {
               <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
             </div>
             <div className="kpi-value">{kpi.value}</div>
-            <div className="kpi-label">{kpi.label}</div>
+            <div className="kpi-label flex items-center gap-1">
+              <span>{kpi.label}</span>
+              <MetricInfoTooltip label={kpi.label} />
+            </div>
           </div>
         ))}
       </div>
