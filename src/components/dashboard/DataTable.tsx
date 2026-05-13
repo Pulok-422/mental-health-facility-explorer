@@ -30,7 +30,6 @@ function exportCSV(data: Record<string, any>[], filename: string) {
   URL.revokeObjectURL(url);
 }
 
-// Fix #8: clean cell formatter with correct precedence
 function formatCell(value: any, key: string): string {
   if (value == null || value === '') return '-';
   if (typeof value !== 'number') return String(value);
@@ -45,7 +44,6 @@ function formatCell(value: any, key: string): string {
 
   if (isPerCapita) return value.toFixed(2);
   if (value >= 1000) return value.toLocaleString();
-  // small numbers (poverty index, literacy %)
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
@@ -182,15 +180,21 @@ export default function DataTable({ districts, facilities, onFacilityClick }: Da
             aria-label="Search table"
           />
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 text-xs"
-          disabled={currentData.length === 0}
-          onClick={() => exportCSV(currentData as any[], `${tab}.csv`)}
-        >
-          <Download className="h-3 w-3 mr-1" /> Export CSV
-        </Button>
+        {tab === 'facilities' ? (
+          <Button variant="outline" size="sm" className="h-8 text-xs"
+            disabled={filteredFacilities.length === 0}
+            onClick={() => exportCSV(filteredFacilities as any[], 'facilities.csv')}
+            aria-label="Export Facilities CSV">
+            <Download className="h-3 w-3 mr-1" /> Export Facilities CSV
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" className="h-8 text-xs"
+            disabled={filteredDistricts.length === 0}
+            onClick={() => exportCSV(filteredDistricts as any[], 'districts.csv')}
+            aria-label="Export Districts CSV">
+            <Download className="h-3 w-3 mr-1" /> Export Districts CSV
+          </Button>
+        )}
       </div>
 
       <div className="overflow-x-auto">
