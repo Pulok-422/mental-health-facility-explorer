@@ -804,7 +804,15 @@ export default function DistrictMap({
                   { value: 'povertyIndex', label: 'Poverty Index' },
                   { value: 'literacyRate', label: 'Literacy Rate' },
                   { value: 'urbanPercent', label: 'Urban Percent' },
-                ] as { value: ChoroplethMetric; label: string }[]).map((opt) => (
+                ] as { value: ChoroplethMetric; label: string }[]).map((opt) => {
+                  const tipLabel =
+                    opt.label === 'Facilities per 100K'
+                      ? 'Facilities per 100K Population'
+                      : opt.label === 'Urban Percent'
+                      ? 'Urban Percent'
+                      : opt.label;
+                  const hasTip = !!METRIC_TOOLTIPS[tipLabel];
+                  return (
                   <label
                     key={opt.value}
                     className="flex items-center gap-1.5 cursor-pointer text-[11px] text-foreground py-0.5"
@@ -817,8 +825,9 @@ export default function DistrictMap({
                       className="h-3 w-3 accent-primary shrink-0"
                     />
                     <span className="truncate">{opt.label}</span>
+                    {hasTip && <MetricInfoTooltip label={tipLabel} />}
                   </label>
-                ))}
+                );})}
               </div>
             </div>
           )}
