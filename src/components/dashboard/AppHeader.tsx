@@ -1,6 +1,9 @@
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Map, BarChart3, Table2, GitCompare, MessageSquare, Menu, X } from 'lucide-react';
-import CitationFooter from '@/components/dashboard/CitationFooter';
+import {
+  Map, BarChart3, Table2, GitCompare,
+  MessageSquare, Menu, X, Quote, ChevronDown, Copy, Check,
+} from 'lucide-react';
 
 export type TabKey = 'map' | 'insights' | 'table' | 'compare';
 
@@ -11,6 +14,113 @@ const NAV_TABS = [
   { key: 'compare'  as TabKey, label: 'Compare',    icon: GitCompare },
 ];
 
+/* ─── helpers ───────────────────────────────────────────────────────────── */
+function getDeployedUrl(): string {
+  if (typeof window !== 'undefined') return window.location.origin;
+  return 'https://example.com';
+}
+function getMonthYear(): string {
+  return new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+/* ─── CitationBlock ─────────────────────────────────────────────────────── */
+interface CitationBlockProps { label: string; text: string }
+function CitationBlock({ label, text }: CitationBlockProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* ignore */ }
+  };
+
+  return (
+    <div className="flex-1 min-w-0">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-[11px] font-semibold text-foreground">{label}</span>
+        <button
+          type="button"
+          onClick={handleCopy}
+          aria-label={`Copy ${label} citation`}
+          className="p-1 rounded hover:bg-muted transition-colors focus:outline-none
+                     focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          {copied
+            ? <Check className="h-3.5 w-3.5 text-green-600" />
+            : <Copy  className="h-3.5 w-3.5 text-muted-foreground" />}
+        </button>
+      </div>
+      <div className="font-mono text-[11px] bg-muted/50 rounded p-2 leading-relaxed break-words">
+        {text}
+      </div>
+    </div>
+  );
+}
+
+/* ─── CiteDropdown ──────────────────────────────────────────────────────── */
+function CiteDropdown() {
+  const [open, setOpen]   = useState(false);
+  const ref               = useRef<HTMLDivElement>(null);
+  const url               = getDeployedUrl();
+  const monthYear         = getMonthYear();
+
+  const apa       = `Alam, S. F. (2025). Mental Health Facility Explorer [Interactive dashboard]. Asian University for Women, Goodlife Center. ${url}. Accessed ${monthYear}.`;
+  const vancouver = `Alam SF. Mental Health Facility Explorer [Internet]. Chittagong: Asian University for Women; 2025 [cited ${monthYear}]. Available from: ${url}`;
+
+  /* close on outside click */
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative flex-shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-label="Cite this tool"
+        className={`flex items-center gap-1.5 text-[13px] rounded-[8px] whitespace-nowrap px-3 py-[7px]
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-all duration-150
+          border ${open
+            ? 'bg-primary text-primary-foreground font-medium shadow-sm border-primary/80'
+            : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/60'
+          }`}
+      >
+        <Quote style={{ width: 13, height: 13 }} />
+        <span className="hidden sm:inline">Cite</span>
+        <ChevronDown
+          style={{ width: 12, height: 12 }}
+          className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-2 w-[520px] max-w-[90vw] z-50
+                     bg-card border border-border rounded-xl shadow-lg p-4
+                     flex flex-col gap-3 animate-in fade-in slide-in-from-top-1 duration-150"
+        >
+          <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">
+            Cite this tool
+          </p>
+          <div className="flex flex-col md:flex-row gap-3">
+            <CitationBlock label="APA 7th"    text={apa} />
+            <CitationBlock label="Vancouver"  text={vancouver} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── AppHeader ─────────────────────────────────────────────────────────── */
 interface AppHeaderProps {
   activeTab?: TabKey;
   onTabChange?: (tab: TabKey) => void;
@@ -72,7 +182,7 @@ export default function AppHeader({
           </p>
         </div>
 
-        {/* Centered nav */}
+        {/* Centered nav — main tabs only (no Feedback, no Cite) */}
         <nav className="flex-1 flex justify-center" aria-label="Dashboard sections">
           <div className="flex gap-0.5 bg-muted/60 rounded-[12px] p-1.5 border border-border/60 overflow-x-auto">
             {NAV_TABS.map((t) => {
@@ -100,33 +210,34 @@ export default function AppHeader({
                 </button>
               );
             })}
-
-            <div className="w-px h-5 bg-border/60 mx-1 self-center hidden sm:block" aria-hidden="true" />
-
-            {/* Feedback tab */}
-            <button
-              type="button"
-              onClick={() => navigate('/feedback')}
-              aria-current={onFeedback ? 'page' : undefined}
-              className={`flex items-center gap-1.5 text-[13px] rounded-[8px] whitespace-nowrap
-                focus:outline-none focus-visible:ring-2 focus-visible:ring-primary
-                transition-all duration-150 ${
-                  onFeedback
-                    ? 'bg-primary text-primary-foreground font-medium shadow-sm border border-primary/80'
-                    : 'border border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/60'
-                }`}
-              style={{ padding: '7px 14px' }}
-            >
-              <MessageSquare style={{ width: 13, height: 13 }} />
-              <span className="hidden sm:inline">Feedback</span>
-            </button>
           </div>
         </nav>
-      </div>
 
-      <div className="border-t border-border/40 bg-card/50">
-        <CitationFooter />
+        {/* Right corner: Feedback + Cite */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Feedback */}
+          <button
+            type="button"
+            onClick={() => navigate('/feedback')}
+            aria-current={onFeedback ? 'page' : undefined}
+            className={`flex items-center gap-1.5 text-[13px] rounded-[8px] whitespace-nowrap px-3 py-[7px]
+              focus:outline-none focus-visible:ring-2 focus-visible:ring-primary
+              transition-all duration-150 border ${
+                onFeedback
+                  ? 'bg-primary text-primary-foreground font-medium shadow-sm border-primary/80'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/60'
+              }`}
+          >
+            <MessageSquare style={{ width: 13, height: 13 }} />
+            <span className="hidden sm:inline">Feedback</span>
+          </button>
+
+          {/* Cite (dropdown) */}
+          <CiteDropdown />
+        </div>
+
       </div>
+      {/* CitationFooter bar removed — citation is now in the Cite dropdown above */}
     </header>
   );
 }
