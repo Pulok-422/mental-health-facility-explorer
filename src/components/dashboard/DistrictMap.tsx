@@ -436,6 +436,8 @@ export default function DistrictMap({
     facilities.forEach((f) => {
       if (f.latitude && f.longitude) {
         const marker = L.marker([f.latitude, f.longitude], { icon: getMentalHealthFacilityIcon() });
+        const score = facilityCompleteness(f);
+        const badgeClass = completenessClasses(score);
         marker.bindPopup(
           `<div class="facility-popup">
             <h3>${f.facility_name}</h3>
@@ -446,6 +448,9 @@ export default function DistrictMap({
               <span class="popup-label">Cost</span><span class="popup-value">${f.cost || '-'}</span>
               <span class="popup-label">Ownership</span><span class="popup-value">${f.ownership || '-'}</span>
               ${f.mobile_contact_number ? `<span class="popup-label">Phone</span><span class="popup-value">${f.mobile_contact_number}</span>` : ''}
+            </div>
+            <div style="margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;">
+              <span class="${badgeClass}" style="display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:9999px;">Data: ${score}/${COMPLETENESS_TOTAL} fields complete</span>
             </div>
           </div>`,
           { maxWidth: 300 }
