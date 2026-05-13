@@ -243,6 +243,9 @@ export default function Index() {
           </div>
         </main>
       </div>
+
+      <CitationFooter />
+      <FeedbackWidget />
     </div>
   );
 }
