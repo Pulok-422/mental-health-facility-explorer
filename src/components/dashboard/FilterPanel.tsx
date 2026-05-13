@@ -301,7 +301,7 @@ export default function FilterPanel({
 
       {/* Footer — flex-shrink-0 keeps it pinned at the bottom of the panel,
           always visible at the same level as the map's bottom edge */}
-      <div className="flex-shrink-0 px-3.5 pt-2 pb-3 border-t border-border space-y-2.5 bg-background">
+      <div className="flex-shrink-0 px-3.5 pt-2 pb-1 border-t border-border space-y-2.5 bg-background">
         {chipsSlot}
         <div className="text-center">
           <a
