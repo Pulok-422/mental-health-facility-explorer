@@ -14,6 +14,8 @@ import type {
 } from '@/types/dashboard';
 import DistrictInfoCard from './DistrictInfoCard';
 import { LocateFixed, Expand, Minimize, Home, ChevronDown, ChevronUp, Layers } from 'lucide-react';
+import { facilityCompleteness, completenessClasses, COMPLETENESS_TOTAL } from '@/lib/dataCompleteness';
+import MetricInfoTooltip, { METRIC_TOOLTIPS } from './MetricInfoTooltip';
 
 const BANGLADESH_CENTER: [number, number] = [23.7, 90.35];
 const BANGLADESH_ZOOM = 9.5;
