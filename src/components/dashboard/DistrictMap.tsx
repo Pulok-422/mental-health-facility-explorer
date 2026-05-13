@@ -890,7 +890,11 @@ export default function DistrictMap({
       )}
 
       {selectedDistrictData && (
-        <DistrictInfoCard district={selectedDistrictData} onClose={() => onDistrictClick(null)} />
+        <DistrictInfoCard
+          district={selectedDistrictData}
+          facilities={facilities.filter((f) => f.DIS_CODE === selectedDistrictData.DIS_CODE)}
+          onClose={() => onDistrictClick(null)}
+        />
       )}
 
       {locationError && (
