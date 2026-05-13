@@ -6,35 +6,38 @@ import {
   LabelList, PieChart, Pie, Legend, RadarChart, Radar,
   PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from 'recharts';
-import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { ArrowUp, ArrowDown, Minus, AlertTriangle, TrendingUp, Users, Lock } from 'lucide-react';
 
-// ── Palette ────────────────────────────────────────────────────────────────────
+// ── Design Tokens ─────────────────────────────────────────────────────────────
+// Blue-dominant. Two roles only:
+//   BLUE family  → positive / coverage / government / good
+//   SLATE family → neutral / context
+// ONE semantic red for critical gaps only.
 const C = {
-  underserved: '#ef4444',
-  served:      '#22c55e',
-  neutral:     '#3b82f6',
-  accent:      '#14b8a6',
-  warning:     '#f59e0b',
-  grid:        '#e5e7eb',
-  line:        '#94a3b8',
-  orange:      '#f97316',
-  purple:      '#8b5cf6',
+  blue900: '#1e3a5f', blue700: '#1d4ed8', blue600: '#2563eb',
+  blue500: '#3b82f6', blue400: '#60a5fa', blue200: '#bfdbfe',
+  blue100: '#dbeafe', blue50: '#eff6ff',
+  slate700: '#334155', slate500: '#64748b', slate300: '#cbd5e1',
+  slate200: '#e2e8f0', slate100: '#f1f5f9', slate50: '#f8fafc',
+  gap: '#dc2626', gapBg: '#fef2f2', gapBorder: '#fca5a5',
+  amber: '#b45309', amberBg: '#fffbeb',
+  chartA: '#2563eb', chartB: '#93c5fd',
+  grid: '#e2e8f0', line: '#94a3b8',
 };
 
-const DONUT_PALETTE  = ['#3b82f6','#14b8a6','#f59e0b','#8b5cf6','#ef4444','#22c55e','#f97316','#06b6d4'];
-const DIV_PALETTE    = ['#3b82f6','#14b8a6','#f59e0b','#8b5cf6','#ef4444','#22c55e','#f97316','#06b6d4'];
+const DIV_PALETTE = ['#1d4ed8','#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#1e3a5f','#2563eb','#7dd3fc'];
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function truncateLabel(label: string, max = 14) {
   if (!label) return 'Unknown';
-  return label.length > max ? `${label.slice(0, max)}…` : label;
+  return label.length > max ? `${label.slice(0, max)}\u2026` : label;
 }
 
-function getSeverity(per100k: number) {
-  if (per100k <= 0.08) return { label: 'Critical',  color: C.underserved };
-  if (per100k <= 0.18) return { label: 'High',      color: C.orange };
-  if (per100k <= 0.3)  return { label: 'Moderate',  color: C.warning };
-  return                      { label: 'Better',    color: C.served };
+function getSeverityTier(per100k: number): { label: string; color: string; bg: string } {
+  if (per100k <= 0.08) return { label: 'Critical',  color: C.gap,     bg: C.gapBg };
+  if (per100k <= 0.18) return { label: 'High gap',  color: C.amber,   bg: C.amberBg };
+  if (per100k <= 0.3)  return { label: 'Moderate',  color: C.blue700, bg: C.blue100 };
+  return                      { label: 'Adequate',  color: C.blue600, bg: C.blue50 };
 }
 
 function countBy<T>(arr: T[], key: (item: T) => string): { name: string; value: number }[] {
@@ -53,52 +56,70 @@ function parseCostBracket(cost: string): string {
   const nums = cost.match(/\d+/g);
   if (!nums) return 'Unknown';
   const avg = nums.reduce((s, n) => s + parseInt(n), 0) / nums.length;
-  if (avg < 100)  return '1–99 BDT';
-  if (avg < 500)  return '100–499 BDT';
-  if (avg < 1000) return '500–999 BDT';
+  if (avg < 100) return '1\u201399 BDT';
+  if (avg < 500) return '100\u2013499 BDT';
+  if (avg < 1000) return '500\u2013999 BDT';
   return '1000+ BDT';
 }
 
-// ── Shared sub-components ──────────────────────────────────────────────────────
-function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+function getDiff(valA: number, valB: number) {
+  if (valB === 0) return { pct: 0, direction: 'same' as const };
+  const pct = ((valA - valB) / valB) * 100;
+  return { pct: Math.abs(pct), direction: pct > 0 ? 'higher' as const : pct < 0 ? 'lower' as const : 'same' as const };
+}
+
+function getDiffColor(direction: 'higher' | 'lower' | 'same', higherIsBetter: boolean) {
+  if (direction === 'same') return 'text-muted-foreground';
+  if (higherIsBetter) return direction === 'higher' ? 'text-blue-700' : 'text-red-600';
+  return direction === 'higher' ? 'text-red-600' : 'text-blue-700';
+}
+
+// ── Sub-components ─────────────────────────────────────────────────────────────
+function SectionHeader({ step, title, subtitle }: { step: string; title: string; subtitle?: string }) {
   return (
-    <div className="space-y-1">
-      <h2 className="text-sm font-bold tracking-tight text-foreground">{title}</h2>
-      {subtitle && <p className="text-[11px] leading-4 text-muted-foreground">{subtitle}</p>}
+    <div className="flex items-start gap-4 pb-1">
+      <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white" style={{ backgroundColor: C.blue600 }}>
+        {step}
+      </div>
+      <div>
+        <h2 className="text-sm font-bold tracking-tight text-foreground">{title}</h2>
+        {subtitle && <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">{subtitle}</p>}
+      </div>
     </div>
   );
 }
 
-function ChartCard({
-  title, insight, children, height = 300, className = '',
-}: {
+function SectionDivider() {
+  return <div className="h-px bg-gradient-to-r from-blue-200 via-slate-200 to-transparent my-2" />;
+}
+
+function ChartCard({ title, insight, children, height = 300, className = '' }: {
   title: string; insight?: string; children: React.ReactNode; height?: number; className?: string;
 }) {
   return (
     <div className={`dashboard-panel rounded-xl border border-border bg-card p-3 md:p-4 ${className}`}>
       <div className="mb-2">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-        {insight && <p className="mt-1 text-[11px] leading-4 text-muted-foreground">{insight}</p>}
+        {insight && <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">{insight}</p>}
       </div>
       <div style={{ height }}>{children}</div>
     </div>
   );
 }
 
-function RankingGrid({
-  title, data, color,
-}: {
+function RankingGrid({ title, data, variant }: {
   title: string;
-  data: { name: string; value: number; populationM: number; severity: string; severityColor: string }[];
-  color: string;
+  data: { name: string; value: number; populationM: number; label: string; labelBg: string; labelColor: string }[];
+  variant: 'gap' | 'served';
 }) {
   if (!data.length) return null;
+  const barColor = variant === 'gap' ? C.gap : C.blue600;
   const maxValue = Math.max(...data.map((d) => d.value), 0.01);
   return (
     <div className="dashboard-panel rounded-xl border border-border bg-card p-3 md:p-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-        <div className="text-[10px] text-muted-foreground">facilities per 100K</div>
+        <span className="text-[10px] text-muted-foreground">per 100K people</span>
       </div>
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
         {data.map((d, i) => {
@@ -106,16 +127,14 @@ function RankingGrid({
           return (
             <div key={d.name} className="rounded-lg border border-border bg-background px-2.5 py-2">
               <div className="mb-1 flex items-start justify-between gap-2">
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{ backgroundColor: color }}>
-                      {i + 1}
-                    </span>
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{ backgroundColor: barColor }}>{i + 1}</span>
                     <span className="truncate text-xs font-semibold text-foreground">{d.name}</span>
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5 pl-7 text-[10px] text-muted-foreground">
-                    <span className="rounded-md bg-muted px-1.5 py-0.5">Pop: {d.populationM.toFixed(2)}M</span>
-                    <span className="rounded-md px-1.5 py-0.5 text-white" style={{ backgroundColor: d.severityColor }}>{d.severity}</span>
+                    <span className="rounded-md bg-muted px-1.5 py-0.5">{d.populationM.toFixed(2)}M pop.</span>
+                    <span className="rounded-md px-1.5 py-0.5 font-semibold" style={{ backgroundColor: d.labelBg, color: d.labelColor }}>{d.label}</span>
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
@@ -124,7 +143,7 @@ function RankingGrid({
               </div>
               <div className="pl-7">
                 <div className="h-1.5 w-full rounded-full bg-muted/80">
-                  <div className="h-1.5 rounded-full" style={{ width: `${Math.max(widthPct, 10)}%`, backgroundColor: color }} />
+                  <div className="h-1.5 rounded-full" style={{ width: `${Math.max(widthPct, 8)}%`, backgroundColor: barColor }} />
                 </div>
               </div>
             </div>
@@ -135,8 +154,7 @@ function RankingGrid({
   );
 }
 
-// ── Lollipop chart ─────────────────────────────────────────────────────────────
-function LollipopChart({ data }: { data: { name: string; shortName: string; facilities: number; per100k: number }[] }) {
+function LollipopChart({ data }: { data: { name: string; shortName: string; facilities: number }[] }) {
   const max = Math.max(...data.map((d) => d.facilities), 1);
   return (
     <div className="flex h-full flex-col justify-between gap-1 overflow-hidden py-1">
@@ -149,7 +167,7 @@ function LollipopChart({ data }: { data: { name: string; shortName: string; faci
             <div className="relative flex flex-1 items-center">
               <div className="h-[2px] w-full rounded-full bg-muted/60" />
               <div className="absolute h-[2px] rounded-full bg-blue-400 transition-all" style={{ width: `${pct}%` }} />
-              <div className="absolute h-3 w-3 rounded-full border-2 border-blue-500 bg-card" style={{ left: `calc(${pct}% - 6px)` }} />
+              <div className="absolute h-3 w-3 rounded-full border-2 bg-card" style={{ left: `calc(${pct}% - 6px)`, borderColor: C.blue500 }} />
             </div>
             <span className="w-7 shrink-0 text-left text-[10px] font-bold text-foreground">{d.facilities}</span>
           </div>
@@ -159,21 +177,19 @@ function LollipopChart({ data }: { data: { name: string; shortName: string; faci
   );
 }
 
-// ── Donut label ────────────────────────────────────────────────────────────────
 const RADIAN = Math.PI / 180;
 function DonutLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) {
-  if (percent < 0.05) return null;
+  if (percent < 0.07) return null;
   const r = innerRadius + (outerRadius - innerRadius) * 0.55;
   const x = cx + r * Math.cos(-midAngle * RADIAN);
   const y = cy + r * Math.sin(-midAngle * RADIAN);
   return <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={10} fontWeight={700}>{`${(percent * 100).toFixed(0)}%`}</text>;
 }
 
-// ── Scatter tooltip ────────────────────────────────────────────────────────────
 function ScatterTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
-  const sev = getSeverity(d.per100k);
+  const sev = getSeverityTier(d.per100k);
   return (
     <div className="rounded-xl border border-border bg-card p-3 text-xs shadow-xl" style={{ minWidth: 172 }}>
       <div className="mb-1.5 font-bold text-foreground" style={{ fontSize: 13 }}>{d.name}</div>
@@ -182,37 +198,29 @@ function ScatterTooltip({ active, payload }: any) {
         <div className="flex justify-between gap-6"><span>Per 100K</span><span className="font-semibold text-foreground">{d.per100k}</span></div>
         <div className="flex justify-between gap-6"><span>Facilities</span><span className="font-semibold text-foreground">{d.facilities}</span></div>
       </div>
-      <div className="mt-2 rounded-md px-2 py-1 text-center font-bold text-white" style={{ fontSize: 10, backgroundColor: sev.color }}>
-        {sev.label} coverage{d.critical ? ' · Priority' : ''}
+      <div className="mt-2 rounded-md px-2 py-1 text-center font-bold" style={{ fontSize: 10, backgroundColor: sev.bg, color: sev.color }}>{sev.label}</div>
+    </div>
+  );
+}
+
+function StatCard({ value, label, icon: Icon, color }: { value: number; label: string; icon: any; color: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-card px-3 py-2.5 flex items-center gap-3">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: C.blue50 }}>
+        <Icon className="h-4 w-4" style={{ color }} />
+      </div>
+      <div>
+        <div className="text-xl font-bold leading-tight" style={{ color }}>{value.toLocaleString()}</div>
+        <div className="text-[10px] text-muted-foreground">{label}</div>
       </div>
     </div>
   );
 }
 
-// ── Compare helpers ────────────────────────────────────────────────────────────
-function getDiff(valA: number, valB: number) {
-  if (valB === 0) return { pct: 0, direction: 'same' as const };
-  const pct = ((valA - valB) / valB) * 100;
-  return { pct: Math.abs(pct), direction: pct > 0 ? ('higher' as const) : pct < 0 ? ('lower' as const) : ('same' as const) };
-}
-
-function getDiffColor(direction: 'higher' | 'lower' | 'same', higherIsBetter: boolean) {
-  if (direction === 'same') return 'text-muted-foreground';
-  if (higherIsBetter) return direction === 'higher' ? 'text-green-600' : 'text-red-500';
-  return direction === 'higher' ? 'text-red-500' : 'text-green-600';
-}
-
 // ══════════════════════════════════════════════════════════════════════════════
-// Main component
-// ══════════════════════════════════════════════════════════════════════════════
-interface InsightsProps {
-  districts: DistrictPop[];
-  facilities: Facility[];
-}
+interface InsightsProps { districts: DistrictPop[]; facilities: Facility[]; }
 
 export default function InsightsTab({ districts, facilities }: InsightsProps) {
-
-  // ── Compare state ────────────────────────────────────────────────────────────
   const [distA, setDistA] = useState('');
   const [distB, setDistB] = useState('');
 
@@ -246,16 +254,15 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
   const compData = useMemo(() => {
     if (!compA || !compB) return [];
     return [
-      { metric: 'Population (M)', A: +(compA.Population / 1e6).toFixed(2),     B: +(compB.Population / 1e6).toFixed(2),     unit: 'M',  higherIsBetter: false },
-      { metric: 'Facilities',     A: compA.total_facilities,                      B: compB.total_facilities,                      unit: '',   higherIsBetter: true  },
-      { metric: 'Per 100K',       A: +(compA.facilitiesPer100k || 0).toFixed(2), B: +(compB.facilitiesPer100k || 0).toFixed(2), unit: '',   higherIsBetter: true  },
-      { metric: 'Poverty Index',  A: +compA['Poverty Index'].toFixed(1),         B: +compB['Poverty Index'].toFixed(1),         unit: '',   higherIsBetter: false },
-      { metric: 'Literacy %',     A: +compA.Literacy_rate.toFixed(1),             B: +compB.Literacy_rate.toFixed(1),             unit: '%',  higherIsBetter: true  },
-      { metric: 'Urban %',        A: +compA.Urban_percent.toFixed(1),             B: +compB.Urban_percent.toFixed(1),             unit: '%',  higherIsBetter: false },
+      { metric: 'Population (M)', A: +(compA.Population / 1e6).toFixed(2), B: +(compB.Population / 1e6).toFixed(2), unit: 'M', higherIsBetter: false },
+      { metric: 'Facilities', A: compA.total_facilities, B: compB.total_facilities, unit: '', higherIsBetter: true },
+      { metric: 'Per 100K', A: +(compA.facilitiesPer100k || 0).toFixed(2), B: +(compB.facilitiesPer100k || 0).toFixed(2), unit: '', higherIsBetter: true },
+      { metric: 'Poverty Index', A: +compA['Poverty Index'].toFixed(1), B: +compB['Poverty Index'].toFixed(1), unit: '', higherIsBetter: false },
+      { metric: 'Literacy %', A: +compA.Literacy_rate.toFixed(1), B: +compB.Literacy_rate.toFixed(1), unit: '%', higherIsBetter: true },
+      { metric: 'Urban %', A: +compA.Urban_percent.toFixed(1), B: +compB.Urban_percent.toFixed(1), unit: '%', higherIsBetter: false },
     ];
   }, [compA, compB]);
 
-  // ── Chart data ────────────────────────────────────────────────────────────────
   const districtBars = useMemo(
     () => [...districts].sort((a, b) => b.total_facilities - a.total_facilities).slice(0, 15).map((d) => ({
       name: d.DIS_NAME || 'Unknown',
@@ -267,20 +274,16 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
   );
 
   const underserved = useMemo(
-    () => [...districts]
-      .filter((d) => d.facilitiesPer100k !== undefined)
-      .sort((a, b) => (a.facilitiesPer100k || 0) - (b.facilitiesPer100k || 0))
-      .slice(0, 10)
-      .map((d) => { const per100k = +(d.facilitiesPer100k || 0).toFixed(2); const sev = getSeverity(per100k); return { name: d.DIS_NAME || 'Unknown', value: per100k, populationM: +(d.Population / 1e6).toFixed(2), severity: sev.label, severityColor: sev.color }; }),
+    () => [...districts].filter((d) => d.facilitiesPer100k !== undefined)
+      .sort((a, b) => (a.facilitiesPer100k || 0) - (b.facilitiesPer100k || 0)).slice(0, 10)
+      .map((d) => { const p = +(d.facilitiesPer100k || 0).toFixed(2); const s = getSeverityTier(p); return { name: d.DIS_NAME || 'Unknown', value: p, populationM: +(d.Population / 1e6).toFixed(2), label: s.label, labelBg: s.bg, labelColor: s.color }; }),
     [districts]
   );
 
   const bestServed = useMemo(
-    () => [...districts]
-      .filter((d) => d.facilitiesPer100k !== undefined)
-      .sort((a, b) => (b.facilitiesPer100k || 0) - (a.facilitiesPer100k || 0))
-      .slice(0, 10)
-      .map((d) => { const per100k = +(d.facilitiesPer100k || 0).toFixed(2); const sev = getSeverity(per100k); return { name: d.DIS_NAME || 'Unknown', value: per100k, populationM: +(d.Population / 1e6).toFixed(2), severity: sev.label, severityColor: sev.color }; }),
+    () => [...districts].filter((d) => d.facilitiesPer100k !== undefined)
+      .sort((a, b) => (b.facilitiesPer100k || 0) - (a.facilitiesPer100k || 0)).slice(0, 10)
+      .map((d) => { const p = +(d.facilitiesPer100k || 0).toFixed(2); const s = getSeverityTier(p); return { name: d.DIS_NAME || 'Unknown', value: p, populationM: +(d.Population / 1e6).toFixed(2), label: s.label, labelBg: s.bg, labelColor: s.color }; }),
     [districts]
   );
 
@@ -299,260 +302,194 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
   }, [districts]);
 
   const facilityVsNeed = useMemo(() => {
-    const points = districts.map((d) => {
-      const population = +(d.Population / 1e6).toFixed(2);
-      const per100k = +(d.facilitiesPer100k || 0).toFixed(2);
-      const critical = population >= populationMedian && per100k <= coverageMedian;
-      return { name: d.DIS_NAME || 'Unknown', population, per100k, facilities: d.total_facilities || 0, critical };
-    });
-    const criticalSorted = [...points].filter((d) => d.critical).sort((a, b) => b.population - a.population || a.per100k - b.per100k).slice(0, 8).map((d) => ({ ...d, label: d.name }));
-    return { critical: criticalSorted, normal: points.filter((d) => !d.critical), all: points };
+    const all = districts.map((d) => ({
+      name: d.DIS_NAME || 'Unknown',
+      population: +(d.Population / 1e6).toFixed(2),
+      per100k: +(d.facilitiesPer100k || 0).toFixed(2),
+      facilities: d.total_facilities || 0,
+    }));
+    const isGap = (d: typeof all[0]) => d.population >= populationMedian && d.per100k < coverageMedian;
+    const gap = all.filter(isGap);
+    const rest = all.filter((d) => !isGap(d));
+    const gapLabelled = [...gap].sort((a, b) => b.population - a.population || a.per100k - b.per100k)
+      .slice(0, 8).map((d) => ({ ...d, label: d.name }));
+    const gapUnlabelled = gap.filter((d) => !gapLabelled.find((g) => g.name === d.name));
+    return { gapLabelled, gapUnlabelled, rest, gapCount: gap.length };
   }, [districts, populationMedian, coverageMedian]);
 
-  const quadrantCounts = useMemo(() => {
-    const all = facilityVsNeed.all;
-    return {
-      highPopLowCov:  all.filter((d) => d.population >= populationMedian && d.per100k <  coverageMedian).length,
-      highPopHighCov: all.filter((d) => d.population >= populationMedian && d.per100k >= coverageMedian).length,
-      lowPopLowCov:   all.filter((d) => d.population <  populationMedian && d.per100k <  coverageMedian).length,
-      lowPopHighCov:  all.filter((d) => d.population <  populationMedian && d.per100k >= coverageMedian).length,
-    };
-  }, [facilityVsNeed.all, populationMedian, coverageMedian]);
-
   const facilityTypeDist = useMemo(() => countBy(facilities, (f) => f.facility_type).slice(0, 10), [facilities]);
-  const ownershipDist    = useMemo(() => countBy(facilities, (f) => f.ownership), [facilities]);
+  const ownershipDist = useMemo(() => countBy(facilities, (f) => f.ownership), [facilities]);
 
-  // ── NEW: Division-level breakdown (govt vs private stacked) ──────────────────
   const divisionBreakdown = useMemo(() => {
     const divs: Record<string, { govt: number; private: number; free: number; child: number }> = {};
     facilities.forEach((f) => {
       const div = f.DIV_NAME || 'Unknown';
       if (!divs[div]) divs[div] = { govt: 0, private: 0, free: 0, child: 0 };
-      if (f.ownership === 'Government') divs[div].govt++;
-      else divs[div].private++;
+      if (f.ownership === 'Government') divs[div].govt++; else divs[div].private++;
       if ((f.cost || '').toLowerCase().includes('free')) divs[div].free++;
       if ((f.category_adult_child_both || '').includes('Child')) divs[div].child++;
     });
-    return Object.entries(divs)
-      .map(([name, v]) => ({ name, ...v, total: v.govt + v.private }))
-      .sort((a, b) => b.total - a.total);
+    return Object.entries(divs).map(([name, v]) => ({ name, ...v, total: v.govt + v.private })).sort((a, b) => b.total - a.total);
   }, [facilities]);
 
-  // ── NEW: Access profile — cost brackets ──────────────────────────────────────
   const costBrackets = useMemo(() => {
-    const order = ['Free', '1–99 BDT', '100–499 BDT', '500–999 BDT', '1000+ BDT', 'Unknown'];
+    const order = ['Free', '1\u201399 BDT', '100\u2013499 BDT', '500\u2013999 BDT', '1000+ BDT', 'Unknown'];
     const map: Record<string, number> = {};
     order.forEach((k) => (map[k] = 0));
     facilities.forEach((f) => { const b = parseCostBracket(f.cost || ''); map[b] = (map[b] || 0) + 1; });
     return order.map((name) => ({ name, value: map[name] || 0 }));
   }, [facilities]);
 
-  // ── NEW: Appointment + walk-in access matrix ─────────────────────────────────
   const accessMatrix = useMemo(() => {
-    const apptFree   = facilities.filter((f) => f.appointment_required === 'Yes' && (f.cost || '').toLowerCase().includes('free')).length;
-    const apptPaid   = facilities.filter((f) => f.appointment_required === 'Yes' && !(f.cost || '').toLowerCase().includes('free')).length;
-    const walkinFree = facilities.filter((f) => f.appointment_required === 'No'  && (f.cost || '').toLowerCase().includes('free')).length;
-    const walkinPaid = facilities.filter((f) => f.appointment_required === 'No'  && !(f.cost || '').toLowerCase().includes('free')).length;
+    const walkinFree = facilities.filter((f) => f.appointment_required === 'No' && (f.cost || '').toLowerCase().includes('free')).length;
+    const walkinPaid = facilities.filter((f) => f.appointment_required === 'No' && !(f.cost || '').toLowerCase().includes('free')).length;
+    const apptFree = facilities.filter((f) => f.appointment_required === 'Yes' && (f.cost || '').toLowerCase().includes('free')).length;
+    const apptPaid = facilities.filter((f) => f.appointment_required === 'Yes' && !(f.cost || '').toLowerCase().includes('free')).length;
     return [
-      { name: 'Walk-in + Free',       value: walkinFree, fill: C.served   },
-      { name: 'Walk-in + Paid',       value: walkinPaid, fill: C.neutral  },
-      { name: 'Appointment + Free',   value: apptFree,   fill: C.accent   },
-      { name: 'Appointment + Paid',   value: apptPaid,   fill: C.warning  },
+      { name: 'Walk-in \u00b7 Free', value: walkinFree, fill: C.blue600 },
+      { name: 'Walk-in \u00b7 Paid', value: walkinPaid, fill: C.blue400 },
+      { name: 'Appt \u00b7 Free', value: apptFree, fill: C.blue200 },
+      { name: 'Appt \u00b7 Paid', value: apptPaid, fill: C.slate300 },
     ];
   }, [facilities]);
 
-  // ── NEW: Facility type × Ownership heatmap-style table ───────────────────────
   const typeOwnerMatrix = useMemo(() => {
-    const types  = Array.from(new Set(facilities.map((f) => f.facility_type))).filter(Boolean);
-    const owners = ['Government', 'Private'];
+    const types = Array.from(new Set(facilities.map((f) => f.facility_type))).filter(Boolean);
     return types.map((type) => {
-      const row: Record<string, number | string> = { type };
-      owners.forEach((own) => {
-        row[own] = facilities.filter((f) => f.facility_type === type && f.ownership === own).length;
-      });
-      row.total = (row['Government'] as number) + (row['Private'] as number);
-      return row as { type: string; Government: number; Private: number; total: number };
+      const govt = facilities.filter((f) => f.facility_type === type && f.ownership === 'Government').length;
+      const priv = facilities.filter((f) => f.facility_type === type && f.ownership === 'Private').length;
+      return { type, Government: govt, Private: priv, total: govt + priv };
     }).sort((a, b) => b.total - a.total);
   }, [facilities]);
 
-  // ── NEW: Division radar — normalised multi-metric profile ────────────────────
   const divisionRadar = useMemo(() => {
-    const divNames = Array.from(new Set(facilities.map((f) => f.DIV_NAME))).filter(Boolean).sort();
-    // For radar we use 5 divisions max (top by facility count)
     const top5 = [...divisionBreakdown].slice(0, 5).map((d) => d.name);
     const distByDiv: Record<string, DistrictPop[]> = {};
-    districts.forEach((d) => {
-      const div = d.DIV_NAME || 'Unknown';
-      if (!distByDiv[div]) distByDiv[div] = [];
-      distByDiv[div].push(d);
-    });
-
-    // metrics normalised 0-100
-    const allCoverage = districts.map((d) => d.facilitiesPer100k || 0);
-    const maxCov = Math.max(...allCoverage, 0.01);
+    districts.forEach((d) => { const div = d.DIV_NAME || 'Unknown'; if (!distByDiv[div]) distByDiv[div] = []; distByDiv[div].push(d); });
+    const allCov = districts.map((d) => d.facilitiesPer100k || 0);
+    const maxCov = Math.max(...allCov, 0.01);
     const allLit = districts.map((d) => d.Literacy_rate || 0);
     const minLit = Math.min(...allLit); const maxLit = Math.max(...allLit);
     const allPov = districts.map((d) => d['Poverty Index'] || 0);
     const minPov = Math.min(...allPov); const maxPov = Math.max(...allPov);
-
     const norm = (v: number, min: number, max: number) => max === min ? 50 : Math.round(((v - min) / (max - min)) * 100);
-
     return top5.map((divName, idx) => {
-      const divDistricts = distByDiv[divName] || [];
-      const avgCov = divDistricts.length ? divDistricts.reduce((s, d) => s + (d.facilitiesPer100k || 0), 0) / divDistricts.length : 0;
-      const avgLit = divDistricts.length ? divDistricts.reduce((s, d) => s + d.Literacy_rate, 0) / divDistricts.length : 0;
-      const avgPov = divDistricts.length ? divDistricts.reduce((s, d) => s + d['Poverty Index'], 0) / divDistricts.length : 0;
+      const dd = distByDiv[divName] || [];
+      const avgCov = dd.length ? dd.reduce((s, d) => s + (d.facilitiesPer100k || 0), 0) / dd.length : 0;
+      const avgLit = dd.length ? dd.reduce((s, d) => s + d.Literacy_rate, 0) / dd.length : 0;
+      const avgPov = dd.length ? dd.reduce((s, d) => s + d['Poverty Index'], 0) / dd.length : 0;
       const divFacs = facilities.filter((f) => f.DIV_NAME === divName);
       const pctGovt = divFacs.length ? Math.round((divFacs.filter((f) => f.ownership === 'Government').length / divFacs.length) * 100) : 0;
       const pctFree = divFacs.length ? Math.round((divFacs.filter((f) => (f.cost || '').toLowerCase().includes('free')).length / divFacs.length) * 100) : 0;
-      return {
-        name: divName,
-        fill: DIV_PALETTE[idx],
-        Coverage:   Math.round((avgCov / maxCov) * 100),
-        Literacy:   norm(avgLit, minLit, maxLit),
-        LowPoverty: norm(maxPov - avgPov, 0, maxPov - minPov), // inverted so higher = better
-        GovtShare:  pctGovt,
-        FreeAccess: pctFree,
-      };
+      return { name: divName, fill: DIV_PALETTE[idx], Coverage: Math.round((avgCov / maxCov) * 100), Literacy: norm(avgLit, minLit, maxLit), LowPoverty: norm(maxPov - avgPov, 0, maxPov - minPov), GovtShare: pctGovt, FreeAccess: pctFree };
     });
   }, [districts, facilities, divisionBreakdown]);
 
   const radarMetrics = ['Coverage', 'Literacy', 'LowPoverty', 'GovtShare', 'FreeAccess'];
 
-  // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-8 animate-fade-in">
 
-      {/* ════════════════════════════════════════════════════════════
-          1. PRIORITY DISTRICTS
-      ════════════════════════════════════════════════════════════ */}
-      <section className="space-y-3">
+      {/* ── CHAPTER 1: WHERE ARE THE GAPS? ── */}
+      <section className="space-y-4">
         <SectionHeader
-          title="Priority Districts"
-          subtitle="District-level extremes by facility coverage rate. Scroll down for the gap scatter plot."
+          step="1"
+          title="Where are the gaps?"
+          subtitle="Districts ranked by mental health facility coverage (facilities per 100,000 people). Districts marked Critical have the greatest unmet need."
         />
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <RankingGrid title="Top 10 Underserved Districts" data={underserved} color={C.underserved} />
-          <RankingGrid title="Top 10 Best Served Districts"  data={bestServed}  color={C.served}     />
+          <RankingGrid title="10 Most Underserved Districts" data={underserved} variant="gap" />
+          <RankingGrid title="10 Best Served Districts" data={bestServed} variant="served" />
         </div>
 
-        {/* Service Gap Analysis scatter ─────────────────────────── */}
         <div className="dashboard-panel rounded-xl border border-border bg-card p-3 md:p-4">
-          <div className="mb-1">
-            <h3 className="text-sm font-semibold text-foreground">Service Gap Analysis</h3>
-            <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
-              Each dot is a district. Color shows which quadrant relative to median population and median coverage.
-              Red = high population &amp; low coverage — top priority for investment.
+          <div className="mb-3">
+            <h3 className="text-sm font-semibold text-foreground">Population vs. Coverage — Investment Priority Map</h3>
+            <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
+              Each dot is a district. Districts in the <strong>lower-right quadrant</strong> (large population, few facilities) are the highest-priority targets for new investment.
             </p>
           </div>
 
-          {/* Quadrant legend pills */}
-          <div className="mb-3 mt-2 flex flex-wrap gap-2">
-            {[
-              { label: `🔴 High Pop · Low Coverage (${quadrantCounts.highPopLowCov})`,  bg: '#fef2f2', border: '#fca5a5', text: '#991b1b' },
-              { label: `🟢 High Pop · High Coverage (${quadrantCounts.highPopHighCov})`, bg: '#f0fdf4', border: '#86efac', text: '#166534' },
-              { label: `🟠 Low Pop · Low Coverage (${quadrantCounts.lowPopLowCov})`,    bg: '#fff7ed', border: '#fdba74', text: '#9a3412' },
-              { label: `🔵 Low Pop · High Coverage (${quadrantCounts.lowPopHighCov})`,   bg: '#eff6ff', border: '#93c5fd', text: '#1e40af' },
-            ].map((q) => (
-              <div key={q.label} className="rounded-full border px-2.5 py-1 text-[10px] font-semibold" style={{ backgroundColor: q.bg, borderColor: q.border, color: q.text }}>
-                {q.label}
-              </div>
-            ))}
+          <div className="mb-3 flex flex-wrap gap-2">
+            <div className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold" style={{ backgroundColor: C.gapBg, borderColor: C.gapBorder, color: C.gap }}>
+              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: C.gap }} />
+              High population &middot; Low coverage &mdash; priority ({facilityVsNeed.gapCount} districts)
+            </div>
+            <div className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold" style={{ backgroundColor: C.blue50, borderColor: C.blue200, color: C.blue700 }}>
+              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: C.blue400 }} />
+              Remaining districts
+            </div>
           </div>
 
-          <div style={{ height: 420 }}>
+          <div style={{ height: 400 }}>
             <ResponsiveContainer>
               <ScatterChart margin={{ left: 10, right: 34, top: 16, bottom: 32 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.grid} strokeOpacity={0.7} />
-                <ReferenceLine x={+populationMedian.toFixed(2)} stroke={C.line} strokeDasharray="5 4" strokeWidth={1.5}
-                  label={{ value: `Median pop (${populationMedian.toFixed(1)}M)`, position: 'insideTopRight', fontSize: 9, fill: C.line, offset: 6 }} />
-                <ReferenceLine y={+coverageMedian.toFixed(2)} stroke={C.line} strokeDasharray="5 4" strokeWidth={1.5}
-                  label={{ value: `Median coverage (${coverageMedian.toFixed(2)})`, position: 'insideTopLeft', fontSize: 9, fill: C.line, offset: 6 }} />
+                <ReferenceLine x={+populationMedian.toFixed(2)} stroke={C.slate300} strokeDasharray="5 4" strokeWidth={1.5}
+                  label={{ value: `Median pop (${populationMedian.toFixed(1)}M)`, position: 'insideTopRight', fontSize: 9, fill: C.slate500, offset: 6 }} />
+                <ReferenceLine y={+coverageMedian.toFixed(2)} stroke={C.slate300} strokeDasharray="5 4" strokeWidth={1.5}
+                  label={{ value: `Median coverage (${coverageMedian.toFixed(2)})`, position: 'insideTopLeft', fontSize: 9, fill: C.slate500, offset: 6 }} />
                 <XAxis type="number" dataKey="population" name="Population (M)" tick={{ fontSize: 10 }} tickLine={false} axisLine={{ stroke: C.grid }}
-                  label={{ value: 'Population (millions)', position: 'bottom', fontSize: 10, fill: '#6b7280', offset: -10 }} />
+                  label={{ value: 'Population (millions)', position: 'bottom', fontSize: 10, fill: C.slate500, offset: -10 }} />
                 <YAxis type="number" dataKey="per100k" name="Facilities per 100K" tick={{ fontSize: 10 }} tickLine={false} axisLine={{ stroke: C.grid }}
-                  label={{ value: 'Facilities per 100K', angle: -90, position: 'insideLeft', fontSize: 10, fill: '#6b7280', dx: -4 }} />
-                <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: '4 4', stroke: C.line }} />
-
-                <Scatter name="Districts" data={facilityVsNeed.normal}
-                  shape={(props: any) => {
-                    const d = props.payload;
-                    const fill = d.population >= populationMedian && d.per100k >= coverageMedian ? C.served
-                               : d.population <  populationMedian && d.per100k >= coverageMedian ? C.neutral
-                               : C.orange;
-                    return <circle cx={props.cx} cy={props.cy} r={5.5} fill={fill} fillOpacity={0.85} stroke="white" strokeWidth={1} />;
-                  }}
-                />
-                <Scatter name="Priority" data={facilityVsNeed.critical}
-                  shape={(props: any) => <circle cx={props.cx} cy={props.cy} r={7} fill={C.underserved} fillOpacity={0.92} stroke="white" strokeWidth={1.5} />}
-                >
-                  <LabelList dataKey="label" position="top" fontSize={9} style={{ fill: '#374151', fontWeight: 600 }} offset={8} />
+                  label={{ value: 'Facilities per 100K', angle: -90, position: 'insideLeft', fontSize: 10, fill: C.slate500, dx: -4 }} />
+                <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: '4 4', stroke: C.slate300 }} />
+                <Scatter name="Other districts" data={facilityVsNeed.rest}
+                  shape={(props: any) => <circle cx={props.cx} cy={props.cy} r={5} fill={C.blue400} fillOpacity={0.55} stroke="white" strokeWidth={1} />} />
+                <Scatter name="Gap (unlabelled)" data={facilityVsNeed.gapUnlabelled}
+                  shape={(props: any) => <circle cx={props.cx} cy={props.cy} r={6} fill={C.gap} fillOpacity={0.75} stroke="white" strokeWidth={1} />} />
+                <Scatter name="Gap (priority)" data={facilityVsNeed.gapLabelled}
+                  shape={(props: any) => <circle cx={props.cx} cy={props.cy} r={7.5} fill={C.gap} fillOpacity={0.92} stroke="white" strokeWidth={1.5} />}>
+                  <LabelList dataKey="label" position="top" fontSize={9} style={{ fill: C.slate700, fontWeight: 600 }} offset={9} />
                 </Scatter>
               </ScatterChart>
             </ResponsiveContainer>
           </div>
-
-          {/* Quadrant legend strip */}
-          <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] text-muted-foreground md:grid-cols-4">
-            {[
-              { icon: '🔴', label: 'Priority',      desc: 'High pop, low coverage — needs immediate investment' },
-              { icon: '🟢', label: 'Better served', desc: 'High pop, adequate coverage' },
-              { icon: '🟠', label: 'Watch',          desc: 'Low pop, low coverage — monitor closely' },
-              { icon: '🔵', label: 'Adequate',       desc: 'Low pop, good coverage relative to size' },
-            ].map((s) => (
-              <div key={s.label} className="rounded-md bg-muted/40 px-2 py-1.5">
-                <div className="font-semibold text-foreground">{s.icon} {s.label}</div>
-                <div className="mt-0.5 leading-3">{s.desc}</div>
-              </div>
-            ))}
-          </div>
+          <p className="mt-2 text-[10px] leading-4 text-muted-foreground italic">
+            Dashed lines mark the national median population and median coverage. Districts below the coverage line are below-average — those also right of the population line are the most urgent.
+          </p>
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════
-          2. SYSTEM OVERVIEW
-      ════════════════════════════════════════════════════════════ */}
-      <section className="space-y-3">
+      <SectionDivider />
+
+      {/* ── CHAPTER 2: HOW IS THE SYSTEM STRUCTURED? ── */}
+      <section className="space-y-4">
         <SectionHeader
-          title="System Overview"
-          subtitle="Where facilities are concentrated and how the service system is structured."
+          step="2"
+          title="How is the system structured?"
+          subtitle="Facility concentration by district and division, with ownership and type breakdown — understanding what already exists."
         />
+
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-          <ChartCard title="Facilities by District (Top 15)" insight="Ranked by total facility count." height={340} className="xl:col-span-5">
+          <ChartCard title="Facilities by District (Top 15)" insight="Concentration is highest in major cities. Rural districts are largely absent from this list." height={340} className="xl:col-span-5">
             <LollipopChart data={districtBars} />
           </ChartCard>
-
           <div className="grid grid-cols-1 gap-4 xl:col-span-7 xl:grid-cols-2">
-            <ChartCard title="Facility Type Distribution" insight="Horizontal bars ease comparison across categories." height={340}>
+            <ChartCard title="Facility Types" insight="Psychiatric services and general hospitals dominate the landscape." height={340}>
               <ResponsiveContainer>
                 <BarChart data={facilityTypeDist} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={C.grid} strokeOpacity={0.6} />
                   <XAxis type="number" tick={{ fontSize: 10 }} tickLine={false} />
                   <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 10 }} tickFormatter={(v) => truncateLabel(v, 18)} tickLine={false} />
                   <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                  <Bar dataKey="value" fill={C.neutral} radius={[0, 6, 6, 0]} />
+                  <Bar dataKey="value" fill={C.blue500} radius={[0, 6, 6, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
-
-            <ChartCard title="Ownership Distribution" insight="Share of facilities by ownership type." height={340}>
+            <ChartCard title="Ownership Split" insight="Most facilities are private — government provision is limited relative to need." height={340}>
               <ResponsiveContainer>
                 <PieChart>
                   <Pie data={ownershipDist} cx="50%" cy="43%" innerRadius="38%" outerRadius="66%" paddingAngle={3} dataKey="value" labelLine={false} label={DonutLabel}>
-                    {ownershipDist.map((_, i) => <Cell key={i} fill={DONUT_PALETTE[i % DONUT_PALETTE.length]} />)}
+                    {ownershipDist.map((_, i) => <Cell key={i} fill={[C.blue600, C.blue300, C.blue900][i % 3]} />)}
                   </Pie>
                   <Tooltip content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
                     const d = payload[0];
                     const total = ownershipDist.reduce((s, item) => s + item.value, 0);
                     const pct = total ? (((d.value as number) / total) * 100).toFixed(1) : '0';
-                    return (
-                      <div className="rounded-lg border border-border bg-card p-2 text-xs shadow-md">
-                        <div className="font-semibold text-foreground">{d.name}</div>
-                        <div className="text-muted-foreground">{d.value} facilities ({pct}%)</div>
-                      </div>
-                    );
+                    return <div className="rounded-lg border border-border bg-card p-2 text-xs shadow-md"><div className="font-semibold text-foreground">{d.name}</div><div className="text-muted-foreground">{d.value} facilities ({pct}%)</div></div>;
                   }} />
                   <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10, paddingTop: 8 }} formatter={(v) => truncateLabel(v, 20)} />
                 </PieChart>
@@ -560,68 +497,47 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
             </ChartCard>
           </div>
         </div>
-      </section>
 
-      {/* ════════════════════════════════════════════════════════════
-          3. DIVISION-LEVEL BREAKDOWN  (NEW)
-      ════════════════════════════════════════════════════════════ */}
-      <section className="space-y-3">
-        <SectionHeader
-          title="Division-Level Breakdown"
-          subtitle="Government vs private facility count per division, with free-service and child-focused totals."
-        />
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-          {/* Stacked bar: govt vs private per division */}
-          <ChartCard title="Govt vs Private Facilities by Division" insight="Stacked by ownership; total height = all facilities in that division." height={280} className="xl:col-span-7">
+          <ChartCard title="Government vs. Private by Division" insight="Hover for free-service and child-focused counts within each division." height={280} className="xl:col-span-7">
             <ResponsiveContainer>
               <BarChart data={divisionBreakdown} margin={{ left: 0, right: 10, top: 5, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.grid} strokeOpacity={0.6} />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} tickLine={false} angle={-20} textAnchor="end" height={45} />
-                <YAxis tick={{ fontSize: 10 }} tickLine={false} label={{ value: 'Facilities', angle: -90, position: 'insideLeft', fontSize: 10, fill: '#6b7280' }} />
-                <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }}
-                  content={({ active, payload, label }) => {
-                    if (!active || !payload?.length) return null;
-                    const govt  = (payload.find((p) => p.dataKey === 'govt')?.value  as number) || 0;
-                    const priv  = (payload.find((p) => p.dataKey === 'private')?.value as number) || 0;
-                    const row   = divisionBreakdown.find((d) => d.name === label);
-                    return (
-                      <div className="rounded-lg border border-border bg-card p-2 text-xs shadow-md">
-                        <div className="mb-1 font-semibold text-foreground">{label}</div>
-                        <div className="text-muted-foreground">Government: {govt}</div>
-                        <div className="text-muted-foreground">Private: {priv}</div>
-                        <div className="text-muted-foreground">Free services: {row?.free ?? 0}</div>
-                        <div className="text-muted-foreground">Child-focused: {row?.child ?? 0}</div>
-                      </div>
-                    );
-                  }}
-                />
+                <YAxis tick={{ fontSize: 10 }} tickLine={false} label={{ value: 'Facilities', angle: -90, position: 'insideLeft', fontSize: 10, fill: C.slate500 }} />
+                <Tooltip content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  const govt = (payload.find((p) => p.dataKey === 'govt')?.value as number) || 0;
+                  const priv = (payload.find((p) => p.dataKey === 'private')?.value as number) || 0;
+                  const row = divisionBreakdown.find((d) => d.name === label);
+                  return <div className="rounded-lg border border-border bg-card p-2 text-xs shadow-md"><div className="mb-1 font-semibold text-foreground">{label}</div><div className="text-muted-foreground">Government: {govt}</div><div className="text-muted-foreground">Private: {priv}</div><div className="text-muted-foreground">Free services: {row?.free ?? 0}</div><div className="text-muted-foreground">Child-focused: {row?.child ?? 0}</div></div>;
+                }} />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10 }} />
-                <Bar dataKey="govt"    name="Government" stackId="a" fill={C.neutral}  radius={[0, 0, 0, 0]} />
-                <Bar dataKey="private" name="Private"    stackId="a" fill={C.accent}   radius={[4, 4, 0, 0]} />
+                <Bar dataKey="govt" name="Government" stackId="a" fill={C.chartA} />
+                <Bar dataKey="private" name="Private" stackId="a" fill={C.chartB} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
 
-          {/* Type × Ownership table */}
           <div className="xl:col-span-5">
             <div className="dashboard-panel rounded-xl border border-border bg-card p-3 md:p-4" style={{ height: 280, overflowY: 'auto' }}>
-              <h3 className="mb-2 text-sm font-semibold text-foreground">Facility Type × Ownership</h3>
-              <p className="mb-3 text-[11px] text-muted-foreground">Count of facilities by type and ownership sector.</p>
+              <h3 className="mb-1 text-sm font-semibold text-foreground">Facility Type \u00d7 Ownership</h3>
+              <p className="mb-3 text-[11px] text-muted-foreground">Count by type and sector.</p>
               <table className="w-full text-[11px]">
                 <thead>
                   <tr className="border-b border-border">
                     <th className="pb-1 text-left font-semibold text-muted-foreground">Type</th>
-                    <th className="pb-1 text-right font-semibold text-blue-600">Govt</th>
-                    <th className="pb-1 text-right font-semibold text-teal-600">Private</th>
+                    <th className="pb-1 text-right font-semibold" style={{ color: C.blue700 }}>Govt</th>
+                    <th className="pb-1 text-right font-semibold" style={{ color: C.blue400 }}>Private</th>
                     <th className="pb-1 text-right font-semibold text-muted-foreground">Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   {typeOwnerMatrix.map((row) => (
                     <tr key={row.type} className="border-b border-border/50 last:border-0">
-                      <td className="py-1.5 pr-2 text-foreground font-medium">{truncateLabel(row.type, 22)}</td>
-                      <td className="py-1.5 text-right font-semibold text-blue-600">{row.Government}</td>
-                      <td className="py-1.5 text-right font-semibold text-teal-600">{row.Private}</td>
+                      <td className="py-1.5 pr-2 font-medium text-foreground">{truncateLabel(row.type, 22)}</td>
+                      <td className="py-1.5 text-right font-semibold" style={{ color: C.blue700 }}>{row.Government}</td>
+                      <td className="py-1.5 text-right font-semibold" style={{ color: C.blue400 }}>{row.Private}</td>
                       <td className="py-1.5 text-right text-muted-foreground">{row.total}</td>
                     </tr>
                   ))}
@@ -632,18 +548,18 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════
-          4. ACCESS PROFILE  (NEW)
-      ════════════════════════════════════════════════════════════ */}
-      <section className="space-y-3">
-        <SectionHeader
-          title="Access Profile"
-          subtitle="How easy is it to access mental health services? Cost brackets, appointment requirements, and walk-in availability."
-        />
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+      <SectionDivider />
 
-          {/* Cost bracket bar */}
-          <ChartCard title="Cost Distribution" insight="How many facilities fall into each cost range (based on available data)." height={240} className="xl:col-span-5">
+      {/* ── CHAPTER 3: WHO CAN ACCESS SERVICES? ── */}
+      <section className="space-y-4">
+        <SectionHeader
+          step="3"
+          title="Who can actually access services?"
+          subtitle="Facility availability only matters if people can reach and afford the care. Cost and appointment barriers are the hidden gap."
+        />
+
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+          <ChartCard title="Cost Distribution" insight="A large share of facilities have unknown cost data \u2014 itself a transparency gap worth closing." height={240} className="xl:col-span-5">
             <ResponsiveContainer>
               <BarChart data={costBrackets} margin={{ left: 0, right: 10, top: 5, bottom: 30 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.grid} strokeOpacity={0.6} />
@@ -652,19 +568,14 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
                 <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
                 <Bar dataKey="value" name="Facilities" radius={[6, 6, 0, 0]}>
                   {costBrackets.map((entry, i) => (
-                    <Cell key={i} fill={
-                      entry.name === 'Free'       ? C.served  :
-                      entry.name === '1–99 BDT'   ? C.accent  :
-                      entry.name === 'Unknown'    ? C.line    : C.neutral
-                    } />
+                    <Cell key={i} fill={entry.name === 'Free' ? C.blue600 : entry.name === 'Unknown' ? C.slate300 : C.blue400} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
 
-          {/* Access matrix donut */}
-          <ChartCard title="Access Type Matrix" insight="Combination of appointment requirement and cost — walk-in + free is the most accessible." height={240} className="xl:col-span-4">
+          <ChartCard title="Access Type Breakdown" insight="Walk-in and free is the most accessible combination. Appointment-only and paid creates the highest barrier." height={240} className="xl:col-span-4">
             <ResponsiveContainer>
               <PieChart>
                 <Pie data={accessMatrix} cx="50%" cy="46%" innerRadius="36%" outerRadius="62%" paddingAngle={3} dataKey="value" labelLine={false} label={DonutLabel}>
@@ -676,36 +587,27 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
             </ResponsiveContainer>
           </ChartCard>
 
-          {/* Access summary stat cards */}
           <div className="xl:col-span-3 flex flex-col gap-3 justify-center">
-            {[
-              { label: 'Walk-in available', value: facilities.filter((f) => f.appointment_required === 'No').length,  icon: '🚶', color: C.served   },
-              { label: 'Appointment required', value: facilities.filter((f) => f.appointment_required === 'Yes').length, icon: '📅', color: C.warning  },
-              { label: 'Free services',  value: facilities.filter((f) => (f.cost || '').toLowerCase().includes('free')).length, icon: '🆓', color: C.accent   },
-              { label: 'International orgs', value: facilities.filter((f) => f.origin === 'International').length,             icon: '🌐', color: C.purple   },
-            ].map((s) => (
-              <div key={s.label} className="rounded-xl border border-border bg-card px-3 py-2.5 flex items-center gap-3">
-                <span className="text-xl">{s.icon}</span>
-                <div>
-                  <div className="text-xl font-bold leading-tight" style={{ color: s.color }}>{s.value}</div>
-                  <div className="text-[10px] text-muted-foreground">{s.label}</div>
-                </div>
-              </div>
-            ))}
+            <StatCard value={facilities.filter((f) => f.appointment_required === 'No').length} label="Walk-in available" icon={Users} color={C.blue600} />
+            <StatCard value={facilities.filter((f) => f.appointment_required === 'Yes').length} label="Appointment required" icon={Lock} color={C.amber} />
+            <StatCard value={facilities.filter((f) => (f.cost || '').toLowerCase().includes('free')).length} label="Free services" icon={TrendingUp} color={C.blue700} />
+            <StatCard value={facilities.filter((f) => f.origin === 'International').length} label="International organisations" icon={AlertTriangle} color={C.slate500} />
           </div>
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════
-          5. DIVISION PROFILE RADAR  (NEW)
-      ════════════════════════════════════════════════════════════ */}
-      <section className="space-y-3">
+      <SectionDivider />
+
+      {/* ── CHAPTER 4: DIVISION PROFILES ── */}
+      <section className="space-y-4">
         <SectionHeader
-          title="Division Profile Radar"
-          subtitle="Normalised multi-metric comparison across the top 5 divisions (0–100 scale; higher = better on all axes)."
+          step="4"
+          title="How do divisions compare overall?"
+          subtitle="A multi-metric profile across the top 5 divisions. All axes normalised 0\u2013100 \u2014 higher is better on all dimensions."
         />
+
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <ChartCard title="Top 5 Divisions — Relative Profile" insight="Coverage, Literacy, Low Poverty, Govt Share, Free Access — each normalised 0–100." height={340}>
+          <ChartCard title="Division Profiles" insight="Coverage, Literacy, Low Poverty, Govt Share, Free Access \u2014 each 0\u2013100. Gaps between lines reveal where divisions fall short." height={340}>
             <ResponsiveContainer>
               <RadarChart cx="50%" cy="50%" outerRadius="72%" data={radarMetrics.map((m) => {
                 const row: Record<string, string | number> = { metric: m };
@@ -716,7 +618,7 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
                 <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10 }} />
                 <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 9 }} tickCount={4} />
                 {divisionRadar.map((d) => (
-                  <Radar key={d.name} name={d.name} dataKey={d.name} stroke={d.fill} fill={d.fill} fillOpacity={0.15} strokeWidth={2} />
+                  <Radar key={d.name} name={d.name} dataKey={d.name} stroke={d.fill} fill={d.fill} fillOpacity={0.12} strokeWidth={2} />
                 ))}
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10 }} />
                 <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11 }} />
@@ -724,15 +626,14 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
             </ResponsiveContainer>
           </ChartCard>
 
-          {/* Division stat table */}
           <div className="dashboard-panel rounded-xl border border-border bg-card p-3 md:p-4" style={{ overflowY: 'auto' }}>
             <h3 className="mb-1 text-sm font-semibold text-foreground">Division Summary</h3>
-            <p className="mb-3 text-[11px] text-muted-foreground">All 8 divisions with facility counts and key metrics.</p>
+            <p className="mb-3 text-[11px] text-muted-foreground">All 8 divisions with facility counts by sector and focus area.</p>
             <table className="w-full text-[11px]">
               <thead>
                 <tr className="border-b border-border">
-                  {['Division','Total','Govt','Free','Child'].map((h) => (
-                    <th key={h} className={`pb-1.5 font-semibold text-muted-foreground ${h==='Division' ? 'text-left' : 'text-right'}`}>{h}</th>
+                  {['Division', 'Total', 'Govt', 'Free', 'Child'].map((h) => (
+                    <th key={h} className={`pb-1.5 font-semibold text-muted-foreground ${h === 'Division' ? 'text-left' : 'text-right'}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -744,9 +645,9 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
                       {row.name}
                     </td>
                     <td className="py-1.5 text-right font-bold text-foreground">{row.total}</td>
-                    <td className="py-1.5 text-right text-blue-600">{row.govt}</td>
-                    <td className="py-1.5 text-right text-teal-600">{row.free}</td>
-                    <td className="py-1.5 text-right text-purple-600">{row.child}</td>
+                    <td className="py-1.5 text-right" style={{ color: C.blue700 }}>{row.govt}</td>
+                    <td className="py-1.5 text-right" style={{ color: C.blue500 }}>{row.free}</td>
+                    <td className="py-1.5 text-right text-muted-foreground">{row.child}</td>
                   </tr>
                 ))}
               </tbody>
@@ -755,13 +656,14 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════
-          6. DISTRICT COMPARISON
-      ════════════════════════════════════════════════════════════ */}
-      <section className="space-y-3">
+      <SectionDivider />
+
+      {/* ── CHAPTER 5: DISTRICT DEEP-DIVE ── */}
+      <section className="space-y-4">
         <SectionHeader
-          title="District Comparison"
-          subtitle="Compare any two districts side-by-side, or benchmark one against the national average."
+          step="5"
+          title="Compare any two districts"
+          subtitle="Benchmark a district against another or against the national average to understand relative need and prioritise resource allocation."
         />
 
         <div className="dashboard-panel rounded-xl border border-border bg-card p-4">
@@ -771,19 +673,14 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
               <option value="">Select District A</option>
               {sortedDistricts.map((d) => <option key={d.DIS_CODE} value={d.DIS_CODE}>{d.DIS_NAME}</option>)}
             </select>
-
             <span className="rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">vs</span>
-
             <select value={distB} onChange={(e) => setDistB(e.target.value)} aria-label="District B"
               className="h-9 rounded-lg border border-border bg-secondary px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Select District B</option>
-              <option value="national">📊 National Average</option>
+              <option value="national">National Average</option>
               {sortedDistricts.map((d) => <option key={d.DIS_CODE} value={d.DIS_CODE}>{d.DIS_NAME}</option>)}
             </select>
-
-            {(!compA || !compB) && (
-              <p className="text-[11px] text-muted-foreground">Select two districts (or one vs National Average) to compare.</p>
-            )}
+            {(!compA || !compB) && <p className="text-[11px] text-muted-foreground">Select two districts \u2014 or one district vs National Average.</p>}
           </div>
         </div>
 
@@ -798,11 +695,11 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
                   <div className="flex items-end justify-between gap-2">
                     <div>
                       <div className="truncate text-[10px] text-muted-foreground" style={{ maxWidth: 80 }}>{compA.DIS_NAME}</div>
-                      <div className="text-xl font-bold leading-tight text-primary">{item.A}{item.unit}</div>
+                      <div className="text-xl font-bold leading-tight" style={{ color: C.blue700 }}>{item.A}{item.unit}</div>
                     </div>
                     <div className="text-right">
                       <div className="truncate text-[10px] text-muted-foreground" style={{ maxWidth: 80 }}>{compB.DIS_NAME}</div>
-                      <div className="text-xl font-bold leading-tight text-accent">{item.B}{item.unit}</div>
+                      <div className="text-xl font-bold leading-tight" style={{ color: C.blue400 }}>{item.B}{item.unit}</div>
                     </div>
                   </div>
                   <div className={`mt-2 flex items-center gap-1 text-[10px] font-semibold ${colorClass}`}>
