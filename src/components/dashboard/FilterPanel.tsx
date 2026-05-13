@@ -123,10 +123,10 @@ export default function FilterPanel({
     updateFilter(key, next as any);
   };
 
-
-
   return (
     <div className="h-full flex flex-col min-h-0 bg-background">
+
+      {/* Scrollable filter content */}
       <div className="flex-1 min-h-0 overflow-y-auto px-3.5 pt-3.5 pb-3">
         {/* Header row */}
         <div className="flex items-center justify-between mb-3">
@@ -297,11 +297,11 @@ export default function FilterPanel({
             <span>Walk-in available</span>
           </label>
         </div>
-
       </div>
 
-      {/* Footer */}
-      <div className="px-3.5 pt-2 pb-3 border-t border-border space-y-2.5">
+      {/* Footer — flex-shrink-0 keeps it pinned at the bottom of the panel,
+          always visible at the same level as the map's bottom edge */}
+      <div className="flex-shrink-0 px-3.5 pt-2 pb-3 border-t border-border space-y-2.5 bg-background">
         {chipsSlot}
         <div className="text-center">
           <a
@@ -314,6 +314,7 @@ export default function FilterPanel({
           </a>
         </div>
       </div>
+
     </div>
   );
 }
