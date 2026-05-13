@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { DistrictPop, Facility } from '@/types/dashboard';
-import { Activity, Users, MapPin, TrendingDown, BookOpen, Heart, Shield } from 'lucide-react';
+import { Activity, MapPin, TrendingDown, BookOpen, Heart, Shield } from 'lucide-react';
+import MetricInfoTooltip from './MetricInfoTooltip';
 
 interface KPICardsProps {
   districts: DistrictPop[];
