@@ -1,8 +1,10 @@
-import type { DistrictPop } from '@/types/dashboard';
+import type { DistrictPop, Facility } from '@/types/dashboard';
 import { X } from 'lucide-react';
+import { avgCompleteness, completenessClasses, COMPLETENESS_TOTAL } from '@/lib/dataCompleteness';
 
 interface DistrictInfoCardProps {
   district: DistrictPop;
+  facilities?: Facility[];
   onClose: () => void;
 }
 
