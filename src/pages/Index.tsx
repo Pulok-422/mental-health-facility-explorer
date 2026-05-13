@@ -11,11 +11,10 @@ import DataTable from '@/components/dashboard/DataTable';
 import DistrictSummaryCards from '@/components/dashboard/DistrictSummaryCards';
 import CompareTab from '@/components/dashboard/CompareTab';
 import ActiveFilterChips from '@/components/dashboard/ActiveFilterChips';
-import { Map, BarChart3, Table2, GitCompare, Menu, X, AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LoadingScreen from '@/components/LoadingScreen';
-import CitationFooter from '@/components/dashboard/CitationFooter';
-import { FeedbackTrigger, FeedbackDialog } from '@/components/dashboard/FeedbackWidget';
+import AppHeader from '@/components/dashboard/AppHeader';
 
 const VALID_TABS: TabView[] = ['map', 'insights', 'table', 'compare'];
 
@@ -63,9 +62,7 @@ export default function Index() {
     return m;
   }, [districts]);
 
-  if (loading) {
-    return <LoadingScreen />;
-  }
+  if (loading) return <LoadingScreen />;
 
   if (error) {
     return (
@@ -85,72 +82,15 @@ export default function Index() {
     );
   }
 
-  const tabs = [
-    { key: 'map' as const, label: 'Map', icon: Map },
-    { key: 'insights' as const, label: 'Insights', icon: BarChart3 },
-    { key: 'table' as const, label: 'Data table', icon: Table2 },
-    { key: 'compare' as const, label: 'Compare', icon: GitCompare },
-  ];
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-3 md:px-4 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              aria-label={sidebarOpen ? 'Close filters' : 'Open filters'}
-              className="p-1.5 rounded-lg hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              {sidebarOpen ? (
-                <X className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <Menu className="h-4 w-4 text-muted-foreground" />
-              )}
-            </button>
-            <div className="min-w-0">
-              <h1 className="text-sm md:text-base font-bold text-foreground truncate">
-                Mental Health Facility Explorer
-              </h1>
-              <p className="text-[11px] md:text-xs text-muted-foreground truncate hidden sm:block">
-                District-wise decision-support dashboard for Bangladesh
-              </p>
-            </div>
-          </div>
-
-          <nav
-            className="flex gap-0.5 bg-muted/60 rounded-[12px] p-1.5 border border-border/60 overflow-x-auto"
-            aria-label="Dashboard sections"
-          >
-            {tabs.map((t) => {
-              const isActive = activeTab === t.key;
-              return (
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => setActiveTab(t.key)}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={`flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] rounded-[8px] whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-[background-color,border-color] duration-150 ${
-                    isActive
-                      ? 'bg-card border border-border text-foreground font-medium shadow-sm'
-                      : 'border border-transparent text-muted-foreground hover:text-foreground'
-                  }`}
-                  style={{ padding: '7px 14px' }}
-                >
-                  <t.icon style={{ width: 13, height: 13 }} />
-                  <span className="hidden sm:inline">{t.label}</span>
-                </button>
-              );
-            })}
-            <div className="w-px h-5 bg-border/60 mx-1 self-center hidden sm:block" aria-hidden="true" />
-            <FeedbackTrigger />
-          </nav>
-        </div>
-        <div className="border-t border-border/40 bg-card/50">
-          <CitationFooter />
-        </div>
-      </header>
+      <AppHeader
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab as TabView)}
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        showSidebarToggle
+      />
 
       <div className="flex flex-1 relative">
         {isMobile && sidebarOpen && (
@@ -200,7 +140,6 @@ export default function Index() {
 
         <main className="flex-1 min-w-0">
           <div className="p-3 md:p-4 space-y-4">
-
             <KPICards districts={activeDistricts} facilities={activeFacilities} />
 
             {activeDistricts.length >= 2 && (
@@ -208,17 +147,15 @@ export default function Index() {
             )}
 
             {activeTab === 'map' && (
-              <>
-                <DistrictMap
-                  geojson={geojson}
-                  districts={activeDistricts}
-                  facilities={activeFacilities}
-                  mapDisplay={mapDisplay}
-                  updateMapDisplay={updateMapDisplay}
-                  selectedDistrict={selectedDistrict}
-                  onDistrictClick={setSelectedDistrict}
-                />
-              </>
+              <DistrictMap
+                geojson={geojson}
+                districts={activeDistricts}
+                facilities={activeFacilities}
+                mapDisplay={mapDisplay}
+                updateMapDisplay={updateMapDisplay}
+                selectedDistrict={selectedDistrict}
+                onDistrictClick={setSelectedDistrict}
+              />
             )}
 
             {activeTab === 'insights' && (
@@ -241,8 +178,6 @@ export default function Index() {
           </div>
         </main>
       </div>
-
-      <FeedbackDialog />
     </div>
   );
 }
