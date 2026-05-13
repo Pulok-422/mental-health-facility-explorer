@@ -6,9 +6,11 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import AppHeader from '@/components/dashboard/AppHeader';
 
 const ROLES = ['Health Planner', 'Researcher', 'NGO Staff', 'Clinician', 'Student', 'Other'];
 const STORAGE_KEY = 'mhfe_feedback';
+const STAR_LABELS = ['', 'Very difficult', 'Difficult', 'Neutral', 'Easy', 'Very easy'];
 
 export default function Feedback() {
   const navigate = useNavigate();
@@ -41,26 +43,10 @@ export default function Feedback() {
     setSubmitted(true);
   };
 
-  const STAR_LABELS = ['', 'Very difficult', 'Difficult', 'Neutral', 'Easy', 'Very easy'];
-
   if (submitted) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="p-1.5 rounded-lg hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            aria-label="Back to dashboard"
-          >
-            <ArrowLeft className="h-4 w-4 text-muted-foreground" />
-          </button>
-          <div>
-            <h1 className="text-sm font-bold text-foreground">Mental Health Facility Explorer</h1>
-            <p className="text-[11px] text-muted-foreground hidden sm:block">District-wise decision-support dashboard for Bangladesh</p>
-          </div>
-        </header>
-
+        <AppHeader />
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="max-w-md w-full text-center animate-fade-in">
             <div className="flex justify-center mb-5">
@@ -84,20 +70,7 @@ export default function Feedback() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className="p-1.5 rounded-lg hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          aria-label="Back to dashboard"
-        >
-          <ArrowLeft className="h-4 w-4 text-muted-foreground" />
-        </button>
-        <div>
-          <h1 className="text-sm font-bold text-foreground">Mental Health Facility Explorer</h1>
-          <p className="text-[11px] text-muted-foreground hidden sm:block">District-wise decision-support dashboard for Bangladesh</p>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="flex-1 flex items-start justify-center p-4 md:p-10">
         <div className="w-full max-w-xl animate-fade-in">
