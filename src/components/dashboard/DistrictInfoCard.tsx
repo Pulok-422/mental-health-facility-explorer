@@ -79,6 +79,13 @@ export default function DistrictInfoCard({ district, facilities = [], onClose }:
       <div className="border-t border-border pt-2 mt-2">
         <p className="text-[10px] leading-relaxed text-muted-foreground italic">💡 {insight}</p>
       </div>
+      {n > 0 && (
+        <div className="mt-2">
+          <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${completenessClass}`}>
+            Avg. data completeness: {avg.toFixed(1)}/{COMPLETENESS_TOTAL} fields across {n} facilities
+          </span>
+        </div>
+      )}
     </div>
   );
 }
