@@ -14,9 +14,8 @@ import ActiveFilterChips from '@/components/dashboard/ActiveFilterChips';
 import { Map, BarChart3, Table2, GitCompare, Menu, X, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LoadingScreen from '@/components/LoadingScreen';
-import ExportButtons from '@/components/dashboard/ExportButtons';
 import CitationFooter from '@/components/dashboard/CitationFooter';
-import FeedbackWidget from '@/components/dashboard/FeedbackWidget';
+import { FeedbackTrigger, FeedbackDialog } from '@/components/dashboard/FeedbackWidget';
 
 const VALID_TABS: TabView[] = ['map', 'insights', 'table', 'compare'];
 
@@ -37,7 +36,6 @@ export default function Index() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Detect mobile
   useEffect(() => {
     const check = () => {
       const mobile = window.innerWidth < 768;
@@ -49,7 +47,6 @@ export default function Index() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Sync tab to URL
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
     if (activeTab === 'map') next.delete('tab');
@@ -146,12 +143,16 @@ export default function Index() {
                 </button>
               );
             })}
+            <div className="w-px h-5 bg-border/60 mx-1 self-center hidden sm:block" aria-hidden="true" />
+            <FeedbackTrigger />
           </nav>
+        </div>
+        <div className="border-t border-border/40 bg-card/50">
+          <CitationFooter />
         </div>
       </header>
 
       <div className="flex flex-1 relative">
-        {/* Mobile overlay */}
         {isMobile && sidebarOpen && (
           <div
             className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
@@ -160,7 +161,6 @@ export default function Index() {
           />
         )}
 
-        {/* Sidebar — drawer on mobile, inline on desktop */}
         <aside
           className={`bg-card border-r border-border transition-all duration-300 flex-shrink-0 ${
             isMobile
@@ -200,8 +200,6 @@ export default function Index() {
 
         <main className="flex-1 min-w-0">
           <div className="p-3 md:p-4 space-y-4">
-
-            <ExportButtons facilities={activeFacilities} districts={activeDistricts} />
 
             <KPICards districts={activeDistricts} facilities={activeFacilities} />
 
@@ -244,8 +242,7 @@ export default function Index() {
         </main>
       </div>
 
-      <CitationFooter />
-      <FeedbackWidget />
+      <FeedbackDialog />
     </div>
   );
 }
