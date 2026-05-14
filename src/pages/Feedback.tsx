@@ -9,38 +9,66 @@ import {
 import AppHeader from '@/components/dashboard/AppHeader';
 
 const ROLES = ['Health Planner', 'Researcher', 'NGO Staff', 'Clinician', 'Student', 'Other'];
-const STORAGE_KEY = 'mhfe_feedback';
 const STAR_LABELS = ['', 'Very difficult', 'Difficult', 'Neutral', 'Easy', 'Very easy'];
+
+const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycbytz3daYqMGYMdj9TKDDTDtJ1K_YFRt5AEoh4Cx4Cean4vIdkCy5rA2f96KvejhdbSbFQ/exec';
 
 export default function Feedback() {
   const navigate = useNavigate();
 
-  const [submitted, setSubmitted] = useState(false);
-  const [role, setRole] = useState('');
-  const [rating, setRating] = useState(0);
-  const [hovered, setHovered] = useState(0);
-  const [useCase, setUseCase] = useState('');
+  const [submitted, setSubmitted]     = useState(false);
+  const [submitting, setSubmitting]   = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [role, setRole]               = useState('');
+  const [rating, setRating]           = useState(0);
+  const [hovered, setHovered]         = useState(0);
+  const [useCase, setUseCase]         = useState('');
   const [improvement, setImprovement] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors]           = useState<Record<string, string>>({});
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!role) e.role = 'Please select your role.';
+    if (!role)   e.role   = 'Please select your role.';
     if (!rating) e.rating = 'Please give a rating.';
     return e;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
+
+    setSubmitting(true);
+    setSubmitError('');
+
+    const payload = {
+      timestamp:   new Date().toISOString(),
+      role,
+      rating,
+      useCase,
+      improvement,
+    };
+
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      const arr = raw ? JSON.parse(raw) : [];
-      const list = Array.isArray(arr) ? arr : [];
-      list.push({ timestamp: new Date().toISOString(), role, rating, useCase, improvement });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-    } catch { /* ignore */ }
-    setSubmitted(true);
+      await fetch(FEEDBACK_URL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body:    JSON.stringify(payload),
+      });
+
+      // Keep a local backup too
+      try {
+        const raw  = localStorage.getItem('mhfe_feedback');
+        const list = Array.isArray(JSON.parse(raw ?? '[]')) ? JSON.parse(raw ?? '[]') : [];
+        list.push(payload);
+        localStorage.setItem('mhfe_feedback', JSON.stringify(list));
+      } catch { /* ignore */ }
+
+      setSubmitted(true);
+    } catch (err) {
+      setSubmitError('Could not send feedback. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -56,7 +84,7 @@ export default function Feedback() {
             </div>
             <h2 className="text-xl font-bold text-foreground mb-2">Thank you for your feedback!</h2>
             <p className="text-sm text-muted-foreground mb-8">
-              Your response has been saved locally and helps us improve the dashboard for health planners and researchers across Bangladesh.
+              Your response has been recorded and helps us improve the dashboard for health planners and researchers across Bangladesh.
             </p>
             <Button onClick={() => navigate('/')} className="w-full sm:w-auto px-8">
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -81,7 +109,7 @@ export default function Feedback() {
             </div>
             <div>
               <h2 className="text-lg font-bold text-foreground">Share your feedback</h2>
-              <p className="text-xs text-muted-foreground">Anonymous · Stored locally on your device</p>
+              <p className="text-xs text-muted-foreground">Anonymous · Sent securely to our team</p>
             </div>
           </div>
 
@@ -171,15 +199,20 @@ export default function Feedback() {
               />
             </div>
 
+            {/* Submit error */}
+            {submitError && (
+              <p className="text-sm text-destructive text-center">{submitError}</p>
+            )}
+
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2 pb-10">
-              <Button variant="outline" onClick={() => navigate('/')} className="sm:w-auto">
+              <Button variant="outline" onClick={() => navigate('/')} className="sm:w-auto" disabled={submitting}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Cancel
               </Button>
-              <Button onClick={handleSubmit} className="flex-1">
+              <Button onClick={handleSubmit} className="flex-1" disabled={submitting}>
                 <Send className="h-4 w-4 mr-2" />
-                Submit feedback
+                {submitting ? 'Sending…' : 'Submit feedback'}
               </Button>
             </div>
 
