@@ -89,11 +89,11 @@ export default function Index() {
         onTabChange={(tab) => setActiveTab(tab as TabView)}
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        showSidebarToggle
+        showSidebarToggle={activeTab !== 'report'}
       />
 
       <div className="flex flex-1 relative">
-        {isMobile && sidebarOpen && (
+        {activeTab !== 'report' && isMobile && sidebarOpen && (
           <div
             className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
             onClick={() => setSidebarOpen(false)}
@@ -101,48 +101,50 @@ export default function Index() {
           />
         )}
 
-        <aside
-          className={`bg-card border-r border-border transition-all duration-300 flex-shrink-0 ${
-            isMobile
-              ? `fixed top-[52px] bottom-0 left-0 z-50 w-[85%] max-w-[320px] shadow-xl ${
-                  sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                }`
-              : sidebarOpen
-              ? 'w-72'
-              : 'w-0 overflow-hidden'
-          }`}
-        >
-          <div className={`${isMobile ? 'h-full' : 'h-[calc(100vh-52px)] sticky top-[52px]'} overflow-hidden`}>
-            <FilterPanel
-              filters={filters}
-              updateFilter={updateFilter}
-              mapDisplay={mapDisplay}
-              updateMapDisplay={updateMapDisplay}
-              resetFilters={resetFilters}
-              filterOptions={filterOptions}
-              selectedDistrict={selectedDistrict}
-              setSelectedDistrict={setSelectedDistrict}
-              facilities={facilities}
-              districtNameLookup={districtNameLookup}
-              chipsSlot={
-                <ActiveFilterChips
-                  filters={filters}
-                  selectedDistrict={selectedDistrict}
-                  districtNameLookup={districtNameLookup}
-                  updateFilter={updateFilter}
-                  setSelectedDistrict={setSelectedDistrict}
-                  resetFilters={resetFilters}
-                />
-              }
-            />
-          </div>
-        </aside>
+        {activeTab !== 'report' && (
+          <aside
+            className={`bg-card border-r border-border transition-all duration-300 flex-shrink-0 ${
+              isMobile
+                ? `fixed top-[52px] bottom-0 left-0 z-50 w-[85%] max-w-[320px] shadow-xl ${
+                    sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                  }`
+                : sidebarOpen
+                ? 'w-72'
+                : 'w-0 overflow-hidden'
+            }`}
+          >
+            <div className={`${isMobile ? 'h-full' : 'h-[calc(100vh-52px)] sticky top-[52px]'} overflow-hidden`}>
+              <FilterPanel
+                filters={filters}
+                updateFilter={updateFilter}
+                mapDisplay={mapDisplay}
+                updateMapDisplay={updateMapDisplay}
+                resetFilters={resetFilters}
+                filterOptions={filterOptions}
+                selectedDistrict={selectedDistrict}
+                setSelectedDistrict={setSelectedDistrict}
+                facilities={facilities}
+                districtNameLookup={districtNameLookup}
+                chipsSlot={
+                  <ActiveFilterChips
+                    filters={filters}
+                    selectedDistrict={selectedDistrict}
+                    districtNameLookup={districtNameLookup}
+                    updateFilter={updateFilter}
+                    setSelectedDistrict={setSelectedDistrict}
+                    resetFilters={resetFilters}
+                  />
+                }
+              />
+            </div>
+          </aside>
+        )}
 
         <main className="flex-1 min-w-0">
-          <div className="p-3 md:p-4 space-y-4">
-            <KPICards districts={activeDistricts} facilities={activeFacilities} />
+          <div className={activeTab === 'report' ? '' : 'p-3 md:p-4 space-y-4'}>
+            {activeTab !== 'report' && <KPICards districts={activeDistricts} facilities={activeFacilities} />}
 
-            {activeDistricts.length >= 2 && (
+            {activeTab !== 'report' && activeDistricts.length >= 2 && (
               <DistrictSummaryCards districts={activeDistricts} />
             )}
 
@@ -173,9 +175,9 @@ export default function Index() {
             {activeTab === 'table' && (
               <DataTable districts={activeDistricts} facilities={activeFacilities} />
             )}
-
-            {activeTab === 'report' && <ReportTab districts={districts} facilities={facilities} />}
           </div>
+
+          {activeTab === 'report' && <ReportTab districts={districts} facilities={facilities} />}
         </main>
       </div>
     </div>
