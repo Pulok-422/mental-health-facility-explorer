@@ -328,9 +328,11 @@ export default function ReportTab({ districts, facilities }: ReportTabProps) {
         <div className="max-w-[860px] mx-auto py-8 px-4">
           <div
             ref={reportRef}
-            style={{ backgroundColor: '#ffffff', fontFamily: 'Georgia, serif' }}
+            style={{ backgroundColor: '#ffffff', fontFamily: '"DM Sans", "Helvetica Neue", sans-serif' }}
             className="bg-white rounded-2xl shadow-xl overflow-hidden"
           >
+            {/* Google Fonts for report */}
+            <style>{`@import url('https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap');`}</style>
             {/* Cover strip */}
             <div style={{ background: 'linear-gradient(90deg, #1d4ed8 0%, #3b82f6 100%)', height: 8 }} />
 
@@ -339,7 +341,7 @@ export default function ReportTab({ districts, facilities }: ReportTabProps) {
               <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: '#1d4ed8', textTransform: 'uppercase', marginBottom: 6, fontFamily: 'Arial, sans-serif' }}>
                 District-level Decision Support · Bangladesh
               </p>
-              <h1 style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', lineHeight: 1.25, marginBottom: 12 }}>
+              <h1 style={{ fontSize: 26, fontWeight: 700, color: '#0f172a', lineHeight: 1.25, marginBottom: 12, fontFamily: '"Lora", Georgia, serif' }}>
                 {reportTitle}
               </h1>
               <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#64748b', marginBottom: rd.isFiltered ? 12 : 0, fontFamily: 'Arial, sans-serif' }}>
@@ -597,212 +599,223 @@ export default function ReportTab({ districts, facilities }: ReportTabProps) {
      BUILDER PHASE
   ════════════════════════════════════════════════════════════════════════ */
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="max-w-2xl mx-auto px-4 py-8 space-y-5">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      {/* Import Google Fonts for builder UI */}
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');`}</style>
 
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <div className="h-11 w-11 rounded-2xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow">
+      <div className="max-w-3xl mx-auto px-4 py-10 space-y-6">
+
+        {/* ── Header ─────────────────────────────────────────────── */}
+        <div className="flex items-center gap-4 pb-2">
+          <div className="h-12 w-12 rounded-2xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-200">
             <FileText className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Build Your Report</h2>
-            <p className="text-sm text-slate-500">Generate a PDF report scoped to your area of interest.</p>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Build Your Report</h2>
+            <p className="text-sm text-slate-500 mt-0.5">Customise scope and sections, then generate a PDF.</p>
           </div>
         </div>
 
-        {/* ── A: Geographic Scope ─────────────────────────────────── */}
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          {/* Card header */}
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Globe className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-semibold text-slate-800">Geographic scope</span>
-            </div>
-            <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 rounded-full px-3 py-1 text-[11px] text-blue-700 font-semibold">
-              <MapPin className="h-3 w-3" /> {scopeLabel}
-            </span>
-          </div>
+        {/* ── Two-column layout for scope + sections ─────────────── */}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-5 items-start">
 
-          <div className="px-5 py-4 space-y-4">
-            {/* Divisions */}
-            <div>
-              <button
-                type="button"
-                onClick={() => setDivOpen(o => !o)}
-                className="w-full flex items-center justify-between mb-3"
-              >
-                <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                  Divisions {selectedDivisions.length ? `(${selectedDivisions.length} selected)` : ''}
-                </span>
-                <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${divOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {divOpen && (
-                <>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {allDivisions.map(name => {
-                      const sel = selectedDivisions.includes(name);
-                      return (
-                        <button
-                          key={name}
-                          type="button"
-                          onClick={() => toggleDivision(name)}
-                          className={`text-[12px] font-medium rounded-lg px-3 py-2 border transition-all text-center ${
-                            sel
-                              ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-blue-50'
-                          }`}
-                        >
-                          {name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {selectedDivisions.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedDivisions([])}
-                      className="mt-2 text-[11px] text-blue-600 hover:text-blue-800 hover:underline"
-                    >
-                      Clear all divisions
-                    </button>
-                  )}
-                </>
-              )}
+          {/* LEFT: Geographic Scope */}
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
+              <div className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-semibold text-slate-800">Geographic Scope</span>
+              </div>
+              <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 rounded-full px-3 py-1 text-[11px] text-blue-700 font-semibold">
+                <MapPin className="h-3 w-3" /> {scopeLabel}
+              </span>
             </div>
 
-            <div className="h-px bg-slate-100" />
-
-            {/* Districts */}
-            <div>
-              <button
-                type="button"
-                onClick={() => setDisOpen(o => !o)}
-                className="w-full flex items-center justify-between mb-3"
-              >
-                <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                  Districts {selectedDistricts.length ? `(${selectedDistricts.length} selected)` : ''}
-                </span>
-                <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${disOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {disOpen && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                      <input
-                        type="text"
-                        value={districtSearch}
-                        onChange={e => setDistrictSearch(e.target.value)}
-                        placeholder="Search districts…"
-                        className="w-full pl-8 pr-7 py-2 text-[12px] border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 bg-slate-50"
-                      />
-                      {districtSearch && (
-                        <button type="button" onClick={() => setDistrictSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2">
-                          <X className="h-3.5 w-3.5 text-slate-400 hover:text-slate-700" />
-                        </button>
-                      )}
+            <div className="px-5 py-4 space-y-4">
+              {/* Divisions */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setDivOpen(o => !o)}
+                  className="w-full flex items-center justify-between mb-3 group"
+                >
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-slate-700 transition-colors">
+                    Divisions {selectedDivisions.length > 0 && <span className="ml-1 bg-blue-100 text-blue-700 rounded-full px-1.5 py-0.5 text-[10px]">{selectedDivisions.length}</span>}
+                  </span>
+                  <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${divOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {divOpen && (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {allDivisions.map(name => {
+                        const sel = selectedDivisions.includes(name);
+                        return (
+                          <button
+                            key={name}
+                            type="button"
+                            onClick={() => toggleDivision(name)}
+                            className={`text-[12px] font-medium rounded-xl px-3 py-2.5 border transition-all text-center ${
+                              sel
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-200'
+                                : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50'
+                            }`}
+                          >
+                            {name}
+                          </button>
+                        );
+                      })}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const allCodes = filteredDistricts.map(d => d.DIS_CODE);
-                        const allSel = allCodes.every(c => selectedDistricts.includes(c));
-                        setSelectedDistricts(allSel ? [] : allCodes);
-                      }}
-                      className="text-[11px] text-blue-600 hover:underline whitespace-nowrap"
-                    >
-                      {filteredDistricts.length > 0 && filteredDistricts.every(d => selectedDistricts.includes(d.DIS_CODE)) ? 'Clear all' : 'Select all'}
-                    </button>
-                  </div>
-                  <div className="max-h-48 overflow-y-auto border border-slate-100 rounded-lg">
-                    {filteredDistricts.length === 0 && (
-                      <p className="text-[11px] text-slate-400 text-center py-4">No districts found</p>
+                    {selectedDivisions.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDivisions([])}
+                        className="text-[11px] text-slate-400 hover:text-red-500 hover:underline transition-colors"
+                      >
+                        Clear divisions
+                      </button>
                     )}
-                    {selectedDivisions.length > 1
-                      ? selectedDivisions.map(div => {
-                          const inDiv = filteredDistricts.filter(d => d.DIV_NAME === div);
-                          if (!inDiv.length) return null;
-                          return (
-                            <div key={div}>
-                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 pt-3 pb-1">{div}</p>
-                              {inDiv.map(d => (
-                                <label key={d.DIS_CODE} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-slate-50 cursor-pointer">
-                                  <Checkbox checked={selectedDistricts.includes(d.DIS_CODE)} onCheckedChange={() => toggleDistrict(d.DIS_CODE)} />
-                                  <span className="text-[12px] text-slate-700">{d.DIS_NAME}</span>
-                                </label>
-                              ))}
-                            </div>
-                          );
-                        })
-                      : filteredDistricts.map(d => (
-                          <label key={d.DIS_CODE} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-slate-50 cursor-pointer">
-                            <Checkbox checked={selectedDistricts.includes(d.DIS_CODE)} onCheckedChange={() => toggleDistrict(d.DIS_CODE)} />
-                            <span className="text-[12px] text-slate-700">{d.DIS_NAME}</span>
-                          </label>
-                        ))
-                    }
                   </div>
+                )}
+              </div>
+
+              <div className="h-px bg-slate-100" />
+
+              {/* Districts */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setDisOpen(o => !o)}
+                  className="w-full flex items-center justify-between mb-3 group"
+                >
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-slate-700 transition-colors">
+                    Districts {selectedDistricts.length > 0 && <span className="ml-1 bg-blue-100 text-blue-700 rounded-full px-1.5 py-0.5 text-[10px]">{selectedDistricts.length}</span>}
+                  </span>
+                  <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${disOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {disOpen && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                        <input
+                          type="text"
+                          value={districtSearch}
+                          onChange={e => setDistrictSearch(e.target.value)}
+                          placeholder="Search districts…"
+                          className="w-full pl-8 pr-7 py-2 text-[12px] border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 bg-slate-50/60 transition-all"
+                        />
+                        {districtSearch && (
+                          <button type="button" onClick={() => setDistrictSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2">
+                            <X className="h-3.5 w-3.5 text-slate-400 hover:text-slate-700" />
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allCodes = filteredDistricts.map(d => d.DIS_CODE);
+                          const allSel = allCodes.every(c => selectedDistricts.includes(c));
+                          setSelectedDistricts(allSel ? [] : allCodes);
+                        }}
+                        className="text-[11px] text-blue-600 hover:underline whitespace-nowrap font-medium"
+                      >
+                        {filteredDistricts.length > 0 && filteredDistricts.every(d => selectedDistricts.includes(d.DIS_CODE)) ? 'Clear all' : 'Select all'}
+                      </button>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto border border-slate-100 rounded-xl bg-slate-50/30">
+                      {filteredDistricts.length === 0 && (
+                        <p className="text-[11px] text-slate-400 text-center py-4">No districts found</p>
+                      )}
+                      {selectedDivisions.length > 1
+                        ? selectedDivisions.map(div => {
+                            const inDiv = filteredDistricts.filter(d => d.DIV_NAME === div);
+                            if (!inDiv.length) return null;
+                            return (
+                              <div key={div}>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 pt-3 pb-1">{div}</p>
+                                {inDiv.map(d => (
+                                  <label key={d.DIS_CODE} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-white cursor-pointer rounded-lg transition-colors">
+                                    <Checkbox checked={selectedDistricts.includes(d.DIS_CODE)} onCheckedChange={() => toggleDistrict(d.DIS_CODE)} />
+                                    <span className="text-[12px] text-slate-700">{d.DIS_NAME}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            );
+                          })
+                        : filteredDistricts.map(d => (
+                            <label key={d.DIS_CODE} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-white cursor-pointer rounded-lg transition-colors">
+                              <Checkbox checked={selectedDistricts.includes(d.DIS_CODE)} onCheckedChange={() => toggleDistrict(d.DIS_CODE)} />
+                              <span className="text-[12px] text-slate-700">{d.DIS_NAME}</span>
+                            </label>
+                          ))
+                      }
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {isEmpty && (selectedDivisions.length > 0 || selectedDistricts.length > 0) && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex gap-2 text-[12px] text-amber-800">
+                  <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <span>No facilities found for this scope. Adjust your selection.</span>
                 </div>
               )}
             </div>
-
-            {isEmpty && (selectedDivisions.length > 0 || selectedDistricts.length > 0) && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-2 text-[12px] text-amber-800">
-                <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                <span>No facilities found for this scope. Adjust your selection.</span>
-              </div>
-            )}
           </div>
-        </div>
 
-        {/* ── B: Sections ─────────────────────────────────────────── */}
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
-            <LayoutList className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-semibold text-slate-800">Sections</span>
-            <span className="ml-auto text-xs text-slate-400">{selectedSections.size} of {SECTIONS.length} selected</span>
-          </div>
-          <div className="px-5 py-4 grid grid-cols-2 gap-2.5">
-            {SECTIONS.map(s => {
-              const active = selectedSections.has(s.key);
-              const Icon = s.icon;
-              return (
-                <button
-                  key={s.key}
-                  type="button"
-                  onClick={() => toggleSection(s.key)}
-                  aria-pressed={active}
-                  className={`text-left rounded-xl p-3.5 border-2 transition-all ${
-                    active
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-start gap-2.5">
-                    <Icon className={`h-4 w-4 mt-0.5 flex-shrink-0 ${active ? 'text-blue-600' : 'text-slate-400'}`} />
-                    <div>
-                      <p className={`text-[13px] font-semibold leading-tight ${active ? 'text-blue-900' : 'text-slate-700'}`}>{s.title}</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{s.desc}</p>
+          {/* RIGHT: Sections selector */}
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm md:w-64">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2 bg-slate-50/60">
+              <LayoutList className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-semibold text-slate-800">Sections</span>
+              <span className="ml-auto text-[11px] font-medium text-slate-400">{selectedSections.size}/{SECTIONS.length}</span>
+            </div>
+            <div className="px-4 py-3 space-y-1.5">
+              {SECTIONS.map(s => {
+                const active = selectedSections.has(s.key);
+                const Icon = s.icon;
+                return (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => toggleSection(s.key)}
+                    aria-pressed={active}
+                    className={`w-full text-left rounded-xl px-3.5 py-2.5 border transition-all flex items-center gap-3 ${
+                      active
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-transparent bg-slate-50 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className={`h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0 ${active ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                      <Icon className={`h-3.5 w-3.5 ${active ? 'text-white' : 'text-slate-500'}`} />
                     </div>
-                  </div>
-                </button>
-              );
-            })}
+                    <div>
+                      <p className={`text-[12px] font-semibold leading-tight ${active ? 'text-blue-900' : 'text-slate-600'}`}>{s.title}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">{s.desc}</p>
+                    </div>
+                    <div className={`ml-auto h-4 w-4 rounded-full flex-shrink-0 border-2 transition-colors ${active ? 'bg-blue-500 border-blue-500' : 'bg-white border-slate-300'}`}>
+                      {active && <svg viewBox="0 0 10 10" fill="none" className="w-full h-full p-0.5"><path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {/* ── Generate button ──────────────────────────────────────── */}
+        {/* ── Generate button ─────────────────────────────────────── */}
         <button
           type="button"
           disabled={isEmpty || selectedSections.size === 0}
           onClick={handleGenerate}
-          className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold text-sm py-3.5 rounded-xl transition-colors shadow-sm"
+          className="w-full flex items-center justify-center gap-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-semibold text-sm py-4 rounded-2xl transition-all shadow-md shadow-blue-200 hover:shadow-lg hover:shadow-blue-200"
         >
           <FileText className="h-4 w-4" />
           {isEmpty && (selectedDivisions.length > 0 || selectedDistricts.length > 0)
             ? 'No data in selected scope'
-            : 'Generate Report'}
+            : selectedSections.size === 0
+            ? 'Select at least one section'
+            : `Generate Report · ${scopeLabel}`}
         </button>
 
       </div>
@@ -823,7 +836,7 @@ function PdfSectionHeader({ num, title }: { num: number; title: string }) {
         }}>
           {num}
         </span>
-        <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', fontFamily: 'Arial, sans-serif' }}>{title}</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', fontFamily: '"Lora", Georgia, serif' }}>{title}</h2>
       </div>
       <div style={{ height: 1, background: '#e2e8f0' }} />
     </div>
