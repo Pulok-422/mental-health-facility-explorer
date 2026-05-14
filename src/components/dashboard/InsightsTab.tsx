@@ -482,7 +482,7 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
               <ResponsiveContainer>
                 <PieChart>
                   <Pie data={ownershipDist} cx="50%" cy="43%" innerRadius="38%" outerRadius="66%" paddingAngle={3} dataKey="value" labelLine={false} label={DonutLabel}>
-                    {ownershipDist.map((_, i) => <Cell key={i} fill={[C.blue600, C.blue300, C.blue900][i % 3]} />)}
+                    {ownershipDist.map((_, i) => <Cell key={i} fill={[C.blue600, C.blue200, C.blue900][i % 3]} />)}
                   </Pie>
                   <Tooltip content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
