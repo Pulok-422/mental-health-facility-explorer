@@ -11,7 +11,7 @@ import AppHeader from '@/components/dashboard/AppHeader';
 const ROLES = ['Health Planner', 'Researcher', 'NGO Staff', 'Clinician', 'Student', 'Other'];
 const STAR_LABELS = ['', 'Very difficult', 'Difficult', 'Neutral', 'Easy', 'Very easy'];
 
-const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycbytz3daYqMGYMdj9TKDDTDtJ1K_YFRt5AEoh4Cx4Cean4vIdkCy5rA2f96KvejhdbSbFQ/exec';
+const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycbwkaAEdBUBKkSGwnfmTojHFQSHkX8SWYEtc8RddnPwJho3h2jFpRzvWeSaXz07rQVXOug/exec';
 
 export default function Feedback() {
   const navigate = useNavigate();
