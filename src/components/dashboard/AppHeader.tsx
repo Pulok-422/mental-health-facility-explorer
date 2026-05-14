@@ -1,17 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Map, BarChart3, Table2, GitCompare,
+  Map, BarChart3, Table2, FileText,
   MessageSquare, Menu, X, Quote, ChevronDown, Copy, Check,
 } from 'lucide-react';
 
-export type TabKey = 'map' | 'insights' | 'table' | 'compare';
+export type TabKey = 'map' | 'insights' | 'table' | 'report';
 
 const NAV_TABS = [
   { key: 'map'      as TabKey, label: 'Map',        icon: Map        },
   { key: 'insights' as TabKey, label: 'Insights',   icon: BarChart3  },
   { key: 'table'    as TabKey, label: 'Data table', icon: Table2     },
-  { key: 'compare'  as TabKey, label: 'Compare',    icon: GitCompare },
+  { key: 'report'   as TabKey, label: 'Report',     icon: FileText   },
 ];
 
 /* ─── helpers ───────────────────────────────────────────────────────────── */

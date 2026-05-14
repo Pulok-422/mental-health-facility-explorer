@@ -83,4 +83,4 @@ export type ChoroplethMetric =
 
 export type BubbleMetric = 'facilities' | 'population' | 'facilitiesPer100k';
 
-export type TabView = 'map' | 'insights' | 'table' | 'compare';
+export type TabView = 'map' | 'insights' | 'table' | 'report';
