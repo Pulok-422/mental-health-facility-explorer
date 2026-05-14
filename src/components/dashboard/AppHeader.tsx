@@ -66,8 +66,8 @@ function CiteDropdown() {
   const url               = getDeployedUrl();
   const monthYear         = getMonthYear();
 
-  const apa       = `Alam, S. F. (2025). Mental Health Facility Explorer [Interactive dashboard]. Asian University for Women, Goodlife Center. ${url}. Accessed ${monthYear}.`;
-  const vancouver = `Alam SF. Mental Health Facility Explorer [Internet]. Chittagong: Asian University for Women; 2025 [cited ${monthYear}]. Available from: ${url}`;
+  const apa       = `*****`;
+  const vancouver = `*****`;
 
   /* close on outside click */
   useEffect(() => {
