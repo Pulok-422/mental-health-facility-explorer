@@ -9,14 +9,14 @@ import FilterPanel from '@/components/dashboard/FilterPanel';
 import InsightsTab from '@/components/dashboard/InsightsTab';
 import DataTable from '@/components/dashboard/DataTable';
 import DistrictSummaryCards from '@/components/dashboard/DistrictSummaryCards';
-import CompareTab from '@/components/dashboard/CompareTab';
+import ReportTab from '@/components/dashboard/ReportTab';
 import ActiveFilterChips from '@/components/dashboard/ActiveFilterChips';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LoadingScreen from '@/components/LoadingScreen';
 import AppHeader from '@/components/dashboard/AppHeader';
 
-const VALID_TABS: TabView[] = ['map', 'insights', 'table', 'compare'];
+const VALID_TABS: TabView[] = ['map', 'insights', 'table', 'report'];
 
 export default function Index() {
   const { districts, facilities, geojson, loading, error, reload } = useDataLoader();
@@ -174,7 +174,7 @@ export default function Index() {
               <DataTable districts={activeDistricts} facilities={activeFacilities} />
             )}
 
-            {activeTab === 'compare' && <CompareTab districts={activeDistricts} />}
+            {activeTab === 'report' && <ReportTab districts={districts} facilities={facilities} />}
           </div>
         </main>
       </div>
