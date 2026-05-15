@@ -196,6 +196,10 @@ export default function DistrictMap({
   const totalGeoDistricts = geojson?.features?.length ?? 0;
   const hasActiveFilter = activeDistrictCodes.size > 0 && activeDistrictCodes.size < totalGeoDistricts;
 
+  useEffect(() => {
+    if (isolateView && !hasActiveFilter) setIsolateView(false);
+  }, [isolateView, hasActiveFilter]);
+
   const districtMap = useMemo(() => {
     const m = new Map<string, DistrictPop>();
     districts.forEach((d) => m.set(d.DIS_CODE, d));
