@@ -770,6 +770,17 @@ export default function DistrictMap({
         >
           <Focus className="h-4 w-4" />
         </button>
+        {isFullscreen && (
+          <button
+            type="button"
+            onClick={handleSnapshot}
+            aria-label="Take map snapshot"
+            title="Take snapshot"
+            className="h-9 w-9 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <Camera className="h-4 w-4" />
+          </button>
+        )}
         <button
           type="button"
           onClick={handleToggleFullscreen}
