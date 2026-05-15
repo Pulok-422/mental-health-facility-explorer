@@ -19,6 +19,7 @@ interface FilterPanelProps {
   updateMapDisplay: <K extends keyof MapDisplay>(key: K, value: MapDisplay[K]) => void;
   resetFilters: () => void;
   filterOptions: {
+    divisions: { code: string; name: string }[];
     districts: { code: string; name: string }[];
     facilityTypes: string[];
     ownership: string[];
@@ -65,6 +66,38 @@ export default function FilterPanel({
 }: FilterPanelProps) {
   const [districtOpen, setDistrictOpen] = useState(false);
   const [districtSearch, setDistrictSearch] = useState('');
+  const [divisionOpen, setDivisionOpen] = useState(false);
+
+  // Build DIV_CODE → Set<DIS_CODE> from facilities (each facility carries both codes)
+  const divToDistricts = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    facilities.forEach((f) => {
+      if (!f.DIV_CODE || !f.DIS_CODE) return;
+      if (!m.has(f.DIV_CODE)) m.set(f.DIV_CODE, new Set());
+      m.get(f.DIV_CODE)!.add(f.DIS_CODE);
+    });
+    return m;
+  }, [facilities]);
+
+  const toggleDivision = (divCode: string, on: boolean) => {
+    const districtsInDiv = Array.from(divToDistricts.get(divCode) || []);
+    if (on) {
+      const nextDivs = [...new Set([...filters.divisions, divCode])];
+      const nextDistricts = [...new Set([...filters.districts, ...districtsInDiv])];
+      updateFilter('divisions', nextDivs);
+      updateFilter('districts', nextDistricts);
+    } else {
+      const nextDivs = filters.divisions.filter((d) => d !== divCode);
+      // keep districts that are in another still-selected division OR not in this division at all
+      const otherDivDistricts = new Set<string>();
+      nextDivs.forEach((dc) => divToDistricts.get(dc)?.forEach((x) => otherDivDistricts.add(x)));
+      const nextDistricts = filters.districts.filter(
+        (dc) => !districtsInDiv.includes(dc) || otherDivDistricts.has(dc)
+      );
+      updateFilter('divisions', nextDivs);
+      updateFilter('districts', nextDistricts);
+    }
+  };
 
   const filteredDistricts = filterOptions.districts.filter((d) =>
     d.name.toLowerCase().includes(districtSearch.toLowerCase())
@@ -153,6 +186,54 @@ export default function FilterPanel({
             }}
           />
         </div>
+
+        {/* DIVISION */}
+        <SectionLabel>Division</SectionLabel>
+        <button
+          type="button"
+          onClick={() => setDivisionOpen((o) => !o)}
+          aria-expanded={divisionOpen}
+          className="w-full flex items-center justify-between py-2 px-2.5 rounded-[10px] bg-card border border-border hover:bg-muted/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <div className="flex flex-col items-start min-w-0">
+            <span className="text-[12px] font-medium text-foreground">Division</span>
+            {filters.divisions.length > 0 && (
+              <span className="text-[11px] text-muted-foreground truncate max-w-[200px]">
+                {filters.divisions.length} selected
+              </span>
+            )}
+          </div>
+          {divisionOpen ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+          )}
+        </button>
+        {divisionOpen && (
+          <div className="mt-1.5 p-2 rounded-[10px] bg-card border border-border">
+            <div className="max-h-44 overflow-y-auto space-y-0.5 pr-1">
+              {filterOptions.divisions.map((dv) => (
+                <label
+                  key={dv.code}
+                  className="flex items-center gap-2 py-0.5 px-1 rounded hover:bg-muted/50 cursor-pointer text-[12px] text-foreground"
+                >
+                  <Checkbox
+                    checked={filters.divisions.includes(dv.code)}
+                    onCheckedChange={(checked) => toggleDivision(dv.code, !!checked)}
+                    className="h-3.5 w-3.5"
+                    aria-label={`Toggle division ${dv.name}`}
+                  />
+                  <span className="truncate">{dv.name}</span>
+                </label>
+              ))}
+              {filterOptions.divisions.length === 0 && (
+                <div className="text-[11px] text-muted-foreground py-2 text-center">
+                  No divisions available
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* DISTRICT */}
         <SectionLabel>District</SectionLabel>

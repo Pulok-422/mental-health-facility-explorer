@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import type { Filters, MapDisplay, DistrictPop, Facility } from '@/types/dashboard';
 
 const DEFAULT_FILTERS: Filters = {
+  divisions: [],
   districts: [],
   facilityTypes: [],
   ownership: [],
@@ -40,6 +41,7 @@ export function useFilters(allDistricts: DistrictPop[], allFacilities: Facility[
   const init = useRef(false);
   const [filters, setFilters] = useState<Filters>(() => ({
     ...DEFAULT_FILTERS,
+    divisions: parseList(searchParams.get('div')),
     districts: parseList(searchParams.get('d')),
     facilityTypes: parseList(searchParams.get('ft')),
     ownership: parseList(searchParams.get('o')),
@@ -65,6 +67,7 @@ export function useFilters(allDistricts: DistrictPop[], allFacilities: Facility[
       if (val) next.set(key, val);
       else next.delete(key);
     };
+    setOrDel('div', filters.divisions.join(','));
     setOrDel('d', filters.districts.join(','));
     setOrDel('ft', filters.facilityTypes.join(','));
     setOrDel('o', filters.ownership.join(','));
@@ -132,7 +135,15 @@ export function useFilters(allDistricts: DistrictPop[], allFacilities: Facility[
 
   const filterOptions = useMemo(() => {
     const unique = <T,>(arr: T[]) => [...new Set(arr)].filter(Boolean).sort() as string[];
+    const divMap = new Map<string, string>();
+    allDistricts.forEach((d) => {
+      if (d.DIV_CODE && d.DIV_NAME && !divMap.has(d.DIV_CODE)) divMap.set(d.DIV_CODE, d.DIV_NAME);
+    });
+    const divisions = Array.from(divMap.entries())
+      .map(([code, name]) => ({ code, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
     return {
+      divisions,
       districts: allDistricts
         .filter((d) => d.DIS_NAME)
         .map((d) => ({ code: d.DIS_CODE, name: d.DIS_NAME }))

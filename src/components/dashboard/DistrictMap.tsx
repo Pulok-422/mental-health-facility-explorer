@@ -13,7 +13,8 @@ import type {
   BubbleMetric,
 } from '@/types/dashboard';
 import DistrictInfoCard from './DistrictInfoCard';
-import { LocateFixed, Expand, Minimize, Home, ChevronDown, ChevronUp, Layers } from 'lucide-react';
+import { LocateFixed, Expand, Minimize, Home, ChevronDown, ChevronUp, Layers, Focus } from 'lucide-react';
+import { toast } from 'sonner';
 import { facilityCompleteness, completenessClasses, COMPLETENESS_TOTAL } from '@/lib/dataCompleteness';
 import MetricInfoTooltip, { METRIC_TOOLTIPS } from './MetricInfoTooltip';
 
@@ -189,6 +190,15 @@ export default function DistrictMap({
   const [locationError, setLocationError] = useState<string | null>(null);
   const [legendOpen, setLegendOpen] = useState(true);
   const [layersOpen, setLayersOpen] = useState(false);
+  const [isolateView, setIsolateView] = useState(false);
+
+  const activeDistrictCodes = useMemo(() => new Set(districts.map((d) => d.DIS_CODE)), [districts]);
+  const totalGeoDistricts = geojson?.features?.length ?? 0;
+  const hasActiveFilter = activeDistrictCodes.size > 0 && activeDistrictCodes.size < totalGeoDistricts;
+
+  useEffect(() => {
+    if (isolateView && !hasActiveFilter) setIsolateView(false);
+  }, [isolateView, hasActiveFilter]);
 
   const districtMap = useMemo(() => {
     const m = new Map<string, DistrictPop>();
@@ -339,6 +349,16 @@ export default function DistrictMap({
         const isSelected = selectedDistrict === code;
         const hasData = !!d;
         const value = hasData ? getMetricValue(d, mapDisplay.choroplethMetric) : 0;
+        const isolatedOut = isolateView && hasActiveFilter && !activeDistrictCodes.has(code);
+        if (isolatedOut) {
+          return {
+            fillColor: '#94a3b8',
+            fillOpacity: 0.25,
+            color: '#1a1a1a',
+            weight: 1,
+            opacity: 0.3,
+          };
+        }
         return {
           fillColor: mapDisplay.showChoropleth
             ? hasData
@@ -395,6 +415,9 @@ export default function DistrictMap({
     fillOpacity,
     selectedDistrict,
     onDistrictClick,
+    isolateView,
+    activeDistrictCodes,
+    hasActiveFilter,
   ]);
 
   // Fix #6: only re-fit when selection actually changes (don't fight user pan/zoom)
@@ -725,6 +748,26 @@ export default function DistrictMap({
           className="h-9 w-9 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <Home className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (!hasActiveFilter && !isolateView) {
+              toast.message('No active district filter to isolate');
+              return;
+            }
+            setIsolateView((v) => !v);
+          }}
+          aria-label="Isolate filtered area"
+          aria-pressed={isolateView}
+          title="Isolate filtered area"
+          className={`h-9 w-9 rounded-xl border shadow-lg backdrop-blur-sm flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+            isolateView
+              ? 'bg-primary text-primary-foreground border-primary'
+              : 'bg-card/95 text-foreground border-border hover:bg-muted'
+          }`}
+        >
+          <Focus className="h-4 w-4" />
         </button>
         <button
           type="button"
