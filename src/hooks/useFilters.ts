@@ -41,6 +41,7 @@ export function useFilters(allDistricts: DistrictPop[], allFacilities: Facility[
   const init = useRef(false);
   const [filters, setFilters] = useState<Filters>(() => ({
     ...DEFAULT_FILTERS,
+    divisions: parseList(searchParams.get('div')),
     districts: parseList(searchParams.get('d')),
     facilityTypes: parseList(searchParams.get('ft')),
     ownership: parseList(searchParams.get('o')),
