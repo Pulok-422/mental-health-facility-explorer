@@ -232,8 +232,6 @@ export default function AppHeader({
             <span className="hidden sm:inline">Feedback</span>
           </button>
 
-          {/* Cite (dropdown) */}
-          <CiteDropdown />
         </div>
 
       </div>

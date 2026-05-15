@@ -13,8 +13,9 @@ import type {
   BubbleMetric,
 } from '@/types/dashboard';
 import DistrictInfoCard from './DistrictInfoCard';
-import { LocateFixed, Expand, Minimize, Home, ChevronDown, ChevronUp, Layers, Focus } from 'lucide-react';
+import { LocateFixed, Expand, Minimize, Home, ChevronDown, ChevronUp, Layers, Focus, Camera } from 'lucide-react';
 import { toast } from 'sonner';
+import { toPng } from 'html-to-image';
 import { facilityCompleteness, completenessClasses, COMPLETENESS_TOTAL } from '@/lib/dataCompleteness';
 import MetricInfoTooltip, { METRIC_TOOLTIPS } from './MetricInfoTooltip';
 
@@ -678,6 +679,32 @@ export default function DistrictMap({
     }
   }, []);
 
+  const handleSnapshot = useCallback(async () => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    try {
+      toast.message('Capturing map…');
+      const dataUrl = await toPng(el, {
+        cacheBust: true,
+        filter: (node) => {
+          // skip leaflet zoom/attribution controls and our floating buttons
+          if (!(node instanceof HTMLElement)) return true;
+          const cls = node.className?.toString?.() || '';
+          if (cls.includes('leaflet-control')) return false;
+          return true;
+        },
+      });
+      const link = document.createElement('a');
+      link.download = `map-snapshot-${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+      toast.success('Snapshot saved');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to capture snapshot');
+    }
+  }, []);
+
   useEffect(() => {
     const handler = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', handler);
@@ -769,6 +796,17 @@ export default function DistrictMap({
         >
           <Focus className="h-4 w-4" />
         </button>
+        {isFullscreen && (
+          <button
+            type="button"
+            onClick={handleSnapshot}
+            aria-label="Take map snapshot"
+            title="Take snapshot"
+            className="h-9 w-9 rounded-xl border border-border bg-card/95 text-foreground shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <Camera className="h-4 w-4" />
+          </button>
+        )}
         <button
           type="button"
           onClick={handleToggleFullscreen}
