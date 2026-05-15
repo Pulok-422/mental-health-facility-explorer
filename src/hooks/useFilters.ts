@@ -67,6 +67,7 @@ export function useFilters(allDistricts: DistrictPop[], allFacilities: Facility[
       if (val) next.set(key, val);
       else next.delete(key);
     };
+    setOrDel('div', filters.divisions.join(','));
     setOrDel('d', filters.districts.join(','));
     setOrDel('ft', filters.facilityTypes.join(','));
     setOrDel('o', filters.ownership.join(','));
