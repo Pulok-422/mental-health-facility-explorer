@@ -411,6 +411,9 @@ export default function DistrictMap({
     fillOpacity,
     selectedDistrict,
     onDistrictClick,
+    isolateView,
+    activeDistrictCodes,
+    hasActiveFilter,
   ]);
 
   // Fix #6: only re-fit when selection actually changes (don't fight user pan/zoom)
