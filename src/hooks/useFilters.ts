@@ -135,7 +135,15 @@ export function useFilters(allDistricts: DistrictPop[], allFacilities: Facility[
 
   const filterOptions = useMemo(() => {
     const unique = <T,>(arr: T[]) => [...new Set(arr)].filter(Boolean).sort() as string[];
+    const divMap = new Map<string, string>();
+    allDistricts.forEach((d) => {
+      if (d.DIV_CODE && d.DIV_NAME && !divMap.has(d.DIV_CODE)) divMap.set(d.DIV_CODE, d.DIV_NAME);
+    });
+    const divisions = Array.from(divMap.entries())
+      .map(([code, name]) => ({ code, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
     return {
+      divisions,
       districts: allDistricts
         .filter((d) => d.DIS_NAME)
         .map((d) => ({ code: d.DIS_CODE, name: d.DIS_NAME }))
