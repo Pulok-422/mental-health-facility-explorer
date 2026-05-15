@@ -345,6 +345,16 @@ export default function DistrictMap({
         const isSelected = selectedDistrict === code;
         const hasData = !!d;
         const value = hasData ? getMetricValue(d, mapDisplay.choroplethMetric) : 0;
+        const isolatedOut = isolateView && hasActiveFilter && !activeDistrictCodes.has(code);
+        if (isolatedOut) {
+          return {
+            fillColor: '#94a3b8',
+            fillOpacity: 0.25,
+            color: '#1a1a1a',
+            weight: 1,
+            opacity: 0.3,
+          };
+        }
         return {
           fillColor: mapDisplay.showChoropleth
             ? hasData
