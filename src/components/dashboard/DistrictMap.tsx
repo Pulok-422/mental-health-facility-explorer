@@ -747,6 +747,26 @@ export default function DistrictMap({
         </button>
         <button
           type="button"
+          onClick={() => {
+            if (!hasActiveFilter && !isolateView) {
+              toast.message('No active district filter to isolate');
+              return;
+            }
+            setIsolateView((v) => !v);
+          }}
+          aria-label="Isolate filtered area"
+          aria-pressed={isolateView}
+          title="Isolate filtered area"
+          className={`h-9 w-9 rounded-xl border shadow-lg backdrop-blur-sm flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+            isolateView
+              ? 'bg-primary text-primary-foreground border-primary'
+              : 'bg-card/95 text-foreground border-border hover:bg-muted'
+          }`}
+        >
+          <Focus className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
           onClick={handleToggleFullscreen}
           aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
           title="Fullscreen"
