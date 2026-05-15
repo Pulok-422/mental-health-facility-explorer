@@ -190,6 +190,11 @@ export default function DistrictMap({
   const [locationError, setLocationError] = useState<string | null>(null);
   const [legendOpen, setLegendOpen] = useState(true);
   const [layersOpen, setLayersOpen] = useState(false);
+  const [isolateView, setIsolateView] = useState(false);
+
+  const activeDistrictCodes = useMemo(() => new Set(districts.map((d) => d.DIS_CODE)), [districts]);
+  const totalGeoDistricts = geojson?.features?.length ?? 0;
+  const hasActiveFilter = activeDistrictCodes.size > 0 && activeDistrictCodes.size < totalGeoDistricts;
 
   const districtMap = useMemo(() => {
     const m = new Map<string, DistrictPop>();
