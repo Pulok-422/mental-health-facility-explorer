@@ -19,6 +19,7 @@ interface FilterPanelProps {
   updateMapDisplay: <K extends keyof MapDisplay>(key: K, value: MapDisplay[K]) => void;
   resetFilters: () => void;
   filterOptions: {
+    divisions: { code: string; name: string }[];
     districts: { code: string; name: string }[];
     facilityTypes: string[];
     ownership: string[];
