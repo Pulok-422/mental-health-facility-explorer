@@ -13,8 +13,9 @@ import type {
   BubbleMetric,
 } from '@/types/dashboard';
 import DistrictInfoCard from './DistrictInfoCard';
-import { LocateFixed, Expand, Minimize, Home, ChevronDown, ChevronUp, Layers, Focus } from 'lucide-react';
+import { LocateFixed, Expand, Minimize, Home, ChevronDown, ChevronUp, Layers, Focus, Camera } from 'lucide-react';
 import { toast } from 'sonner';
+import { toPng } from 'html-to-image';
 import { facilityCompleteness, completenessClasses, COMPLETENESS_TOTAL } from '@/lib/dataCompleteness';
 import MetricInfoTooltip, { METRIC_TOOLTIPS } from './MetricInfoTooltip';
 
