@@ -45,6 +45,7 @@ export interface Facility {
 
 /** Data filters — affect activeDistricts/activeFacilities */
 export interface Filters {
+  divisions: string[];
   districts: string[];
   facilityTypes: string[];
   ownership: string[];
