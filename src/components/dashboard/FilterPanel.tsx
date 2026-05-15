@@ -68,7 +68,36 @@ export default function FilterPanel({
   const [districtSearch, setDistrictSearch] = useState('');
   const [divisionOpen, setDivisionOpen] = useState(false);
 
-  // Map DIV_CODE → array of DIS_CODEs (built from districts list — note districts here is filterOptions.districts plus we need DIV_CODE; pull from facilities/districts metadata via name lookup is unreliable, so use a separate lookup passed via districtNameLookup is insufficient).
+  // Build DIV_CODE → Set<DIS_CODE> from facilities (each facility carries both codes)
+  const divToDistricts = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    facilities.forEach((f) => {
+      if (!f.DIV_CODE || !f.DIS_CODE) return;
+      if (!m.has(f.DIV_CODE)) m.set(f.DIV_CODE, new Set());
+      m.get(f.DIV_CODE)!.add(f.DIS_CODE);
+    });
+    return m;
+  }, [facilities]);
+
+  const toggleDivision = (divCode: string, on: boolean) => {
+    const districtsInDiv = Array.from(divToDistricts.get(divCode) || []);
+    if (on) {
+      const nextDivs = [...new Set([...filters.divisions, divCode])];
+      const nextDistricts = [...new Set([...filters.districts, ...districtsInDiv])];
+      updateFilter('divisions', nextDivs);
+      updateFilter('districts', nextDistricts);
+    } else {
+      const nextDivs = filters.divisions.filter((d) => d !== divCode);
+      // keep districts that are in another still-selected division OR not in this division at all
+      const otherDivDistricts = new Set<string>();
+      nextDivs.forEach((dc) => divToDistricts.get(dc)?.forEach((x) => otherDivDistricts.add(x)));
+      const nextDistricts = filters.districts.filter(
+        (dc) => !districtsInDiv.includes(dc) || otherDivDistricts.has(dc)
+      );
+      updateFilter('divisions', nextDivs);
+      updateFilter('districts', nextDistricts);
+    }
+  };
 
   const filteredDistricts = filterOptions.districts.filter((d) =>
     d.name.toLowerCase().includes(districtSearch.toLowerCase())
