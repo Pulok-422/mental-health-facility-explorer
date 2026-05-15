@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import type { Filters, MapDisplay, DistrictPop, Facility } from '@/types/dashboard';
 
 const DEFAULT_FILTERS: Filters = {
+  divisions: [],
   districts: [],
   facilityTypes: [],
   ownership: [],
