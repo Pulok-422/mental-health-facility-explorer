@@ -679,6 +679,32 @@ export default function DistrictMap({
     }
   }, []);
 
+  const handleSnapshot = useCallback(async () => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    try {
+      toast.message('Capturing map…');
+      const dataUrl = await toPng(el, {
+        cacheBust: true,
+        filter: (node) => {
+          // skip leaflet zoom/attribution controls and our floating buttons
+          if (!(node instanceof HTMLElement)) return true;
+          const cls = node.className?.toString?.() || '';
+          if (cls.includes('leaflet-control')) return false;
+          return true;
+        },
+      });
+      const link = document.createElement('a');
+      link.download = `map-snapshot-${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+      toast.success('Snapshot saved');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to capture snapshot');
+    }
+  }, []);
+
   useEffect(() => {
     const handler = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', handler);
