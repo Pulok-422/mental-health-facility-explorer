@@ -66,6 +66,9 @@ export default function FilterPanel({
 }: FilterPanelProps) {
   const [districtOpen, setDistrictOpen] = useState(false);
   const [districtSearch, setDistrictSearch] = useState('');
+  const [divisionOpen, setDivisionOpen] = useState(false);
+
+  // Map DIV_CODE → array of DIS_CODEs (built from districts list — note districts here is filterOptions.districts plus we need DIV_CODE; pull from facilities/districts metadata via name lookup is unreliable, so use a separate lookup passed via districtNameLookup is insufficient).
 
   const filteredDistricts = filterOptions.districts.filter((d) =>
     d.name.toLowerCase().includes(districtSearch.toLowerCase())
