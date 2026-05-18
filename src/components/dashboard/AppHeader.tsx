@@ -55,7 +55,6 @@ export default function AppHeader({
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-card/85 backdrop-blur-xl supports-[backdrop-filter]:bg-card/75">
       <div className="px-3 md:px-4 py-2.5 flex items-center gap-3">
-
         {/* Left button */}
         {showSidebarToggle && onToggleSidebar ? (
           <button
@@ -96,23 +95,26 @@ export default function AppHeader({
           <h1 className="text-sm md:text-base font-bold text-foreground truncate leading-tight">
             Mental Health Facility Explorer
           </h1>
+
           <p className="text-[11px] md:text-xs text-muted-foreground truncate hidden sm:block">
             Bangladesh district-wise decision-support dashboard
           </p>
         </div>
 
         {/* Center nav */}
-        <nav className="flex-1 flex justify-center min-w-0" aria-label="Dashboard sections">
-          <div className="max-w-full overflow-x-auto scrollbar-none">
+        <nav
+          className="flex-1 flex justify-center min-w-0"
+          aria-label="Dashboard sections"
+        >
+          <div className="max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="relative flex gap-1 bg-muted/55 rounded-2xl p-1 border border-border/60 shadow-inner min-w-max">
-
               {/* Smooth active background */}
               {!onFeedback && (
                 <div
                   className="absolute top-1 bottom-1 rounded-xl bg-primary shadow-sm transition-transform duration-300 ease-out"
                   style={{
-                    width: 'calc((100% - 12px) / 4)',
-                    transform: `translateX(calc(${safeActiveIndex} * (100% + 4px)))`,
+                    width: '92px',
+                    transform: `translateX(${safeActiveIndex * 96}px)`,
                   }}
                 />
               )}
@@ -127,8 +129,8 @@ export default function AppHeader({
                     type="button"
                     onClick={() => handleTabClick(tab.key)}
                     aria-current={isActive ? 'page' : undefined}
-                    className={`relative z-10 flex items-center justify-center gap-1.5 text-[13px] rounded-xl whitespace-nowrap
-                      px-3.5 py-2 min-w-[92px] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary
+                    className={`relative z-10 flex h-9 w-[92px] items-center justify-center gap-1.5 text-[13px] rounded-xl whitespace-nowrap
+                      focus:outline-none focus-visible:ring-2 focus-visible:ring-primary
                       transition-colors duration-200 ${
                         isActive
                           ? 'text-primary-foreground font-semibold'
@@ -140,7 +142,10 @@ export default function AppHeader({
                         isActive ? 'scale-110' : ''
                       }`}
                     />
-                    <span className="hidden sm:inline">{tab.label}</span>
+
+                    <span className="hidden sm:inline">
+                      {tab.label}
+                    </span>
                   </button>
                 );
               })}
@@ -162,11 +167,15 @@ export default function AppHeader({
               }`}
           >
             <MessageSquare className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Feedback</span>
+
+            <span className="hidden sm:inline">
+              Feedback
+            </span>
           </button>
         </div>
       </div>
 
+      {/* Tiny loading indicator during tab switch */}
       {isPending && (
         <div className="h-[2px] w-full overflow-hidden bg-muted">
           <div className="h-full w-1/3 animate-pulse bg-primary" />
