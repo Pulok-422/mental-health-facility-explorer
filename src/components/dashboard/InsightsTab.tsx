@@ -405,9 +405,9 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
 
         <div className="dashboard-panel rounded-xl border border-border bg-card p-3 md:p-4">
           <div className="mb-3">
-            <h3 className="text-sm font-semibold text-foreground">Population vs. Coverage — Investment Priority Map</h3>
+            <h3 className="text-sm font-semibold text-foreground">Population vs. Coverage</h3>
             <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
-              Each dot is a district. Districts in the <strong>lower-right quadrant</strong> (large population, few facilities) are the highest-priority targets for new investment.
+              Each dot is a district.
             </p>
           </div>
 
