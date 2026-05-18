@@ -36,7 +36,7 @@ interface DivRow {
   name: string; total: number; govt: number; priv: number;
   free: number; child: number; avgPer100k: number; districtCount: number;
 }
-interface ScoredD extends DistrictPop { score: number; }
+
 interface ComputedReport {
   hasData: boolean; isFiltered: boolean; scopeLabel: string; scopePct: string;
   totalFacilities: number; totalPop: number; natAvgPer100k: number;
@@ -47,7 +47,7 @@ interface ComputedReport {
   unknownCostCount: number; unknownCostPct: string;
   medianPer100k: number; belowMedianCount: number;
   findings: string[];
-  bottom10: DistrictPop[]; top10: ScoredD[];
+  bottom10: DistrictPop[];
   divRows: DivRow[]; costBrackets: Record<string, number>;
   topDiv: DivRow | null; topGovtDiv: DivRow | null; topFreeDiv: DivRow | null; lowestDiv: DivRow | null;
   coveredDivisions: number;
@@ -95,15 +95,6 @@ function computeReport(
     `Cost data is missing for ${unk} facilit${unk === 1 ? 'y' : 'ies'} (${uPct}%), limiting patients' ability to assess affordability.`,
   ];
 
-  const maxP = Math.max(...sd.map(d => d.facilitiesPer100k || 0));
-  const maxPop = Math.max(...sd.map(d => d.Population));
-  const maxPov = Math.max(...sd.map(d => d['Poverty Index']));
-  const top10: ScoredD[] = [...sd].map(d => {
-    const cg = maxP > 0 ? 1 - (d.facilitiesPer100k || 0) / maxP : 1;
-    const pn = maxPop > 0 ? d.Population / maxPop : 0;
-    const vn = maxPov > 0 ? d['Poverty Index'] / maxPov : 0;
-    return { ...d, score: cg * 0.5 + pn * 0.3 + vn * 0.2 };
-  }).sort((a, b) => b.score - a.score).slice(0, 10);
 
   const divNames = [...new Set(sd.map(d => d.DIV_NAME))];
   const divRows: DivRow[] = divNames.map(name => {
@@ -135,7 +126,7 @@ function computeReport(
     walkinCount: walkin, walkinPct: wPct, apptCount: appt, walkinFreeCount: wf,
     unknownCostCount: unk, unknownCostPct: uPct,
     medianPer100k: median, belowMedianCount: belowMed,
-    findings, bottom10, top10, divRows, costBrackets,
+    findings, bottom10, divRows, costBrackets,
     coveredDivisions: covDiv, topDiv, topGovtDiv, topFreeDiv, lowestDiv,
   };
 }
@@ -145,7 +136,7 @@ const SECTIONS = [
   { key: 'coverage',   icon: MapPin,        title: 'Coverage & Gaps',   desc: 'Underserved districts ranked' },
   { key: 'structure',  icon: Building2,     title: 'System Structure',  desc: 'Govt vs private breakdown' },
   { key: 'access',     icon: Lock,          title: 'Access Barriers',   desc: 'Walk-in, cost, appointment' },
-  { key: 'priorities', icon: AlertTriangle, title: 'Priority Districts',desc: 'Composite need ranking' },
+  
   { key: 'divisions',  icon: Layers,        title: 'Division Profiles', desc: 'Per-division summary' },
 ];
 
@@ -185,7 +176,7 @@ export default function ReportTab({ districts, facilities }: ReportTabProps) {
   const [reportData, setReportData] = useState<ComputedReport | null>(null);
   const [reportTitle, setReportTitle] = useState('');
   const [selectedSections, setSelectedSections] = useState(
-    new Set(['summary', 'coverage', 'structure', 'access', 'priorities', 'divisions'])
+    new Set(['summary', 'coverage', 'structure', 'access', 'divisions'])
   );
   const [selectedDivisions, setSelectedDivisions] = useState<string[]>([]);
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
@@ -294,7 +285,7 @@ export default function ReportTab({ districts, facilities }: ReportTabProps) {
   if (phase === 'report' && reportData) {
     const rd = reportData;
     let secNum = 0;
-    const SECTION_ORDER = ['summary', 'coverage', 'structure', 'access', 'priorities', 'divisions'];
+    const SECTION_ORDER = ['summary', 'coverage', 'structure', 'access', 'divisions'];
     const activeKeys = SECTION_ORDER.filter(k => selectedSections.has(k));
 
     return (
@@ -499,43 +490,6 @@ export default function ReportTab({ districts, facilities }: ReportTabProps) {
                               </div>
                             );
                           })}
-                        </div>
-                      </section>
-                    )}
-
-                    {/* ── PRIORITY DISTRICTS ──────────────────── */}
-                    {key === 'priorities' && (
-                      <section>
-                        <PdfSectionHeader num={n} title="Priority Districts" />
-                        <p style={{ fontSize: 12, color: '#475569', lineHeight: 1.7, marginBottom: 14, fontFamily: 'Arial, sans-serif' }}>
-                          Need score = 0.5 × coverage gap + 0.3 × normalised population + 0.2 × normalised poverty.
-                          Higher scores indicate greater unmet need and urgency for investment.
-                        </p>
-                        <PdfTable
-                          headers={['#', 'District', 'Division', 'Pop (M)', 'Per 100K', 'Poverty', 'Score', 'Priority']}
-                          rows={rd.top10.map((d, i) => {
-                            const rank = i + 1;
-                            const scoreCls = rank <= 3 ? 'color:#dc2626;font-weight:700'
-                              : rank <= 7 ? 'color:#d97706;font-weight:700'
-                              : 'color:#475569';
-                            const pri = rank <= 3 ? { l: 'Urgent', cls: 'bg-red-100 text-red-700' }
-                              : rank <= 7 ? { l: 'High', cls: 'bg-amber-100 text-amber-700' }
-                              : { l: 'Moderate', cls: 'bg-blue-100 text-blue-700' };
-                            return [
-                              String(rank),
-                              d.DIS_NAME,
-                              d.DIV_NAME,
-                              (d.Population / 1e6).toFixed(2),
-                              (d.facilitiesPer100k || 0).toFixed(2),
-                              d['Poverty Index'].toFixed(2),
-                              <span key="sc" style={{ ...Object.fromEntries(scoreCls.split(';').map(s => s.split(':').map(x => x.trim())).filter(a => a.length === 2).map(([k, v]) => [k.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), v])) }}>{d.score.toFixed(3)}</span>,
-                              <PdfBadge key="pr" label={pri.l} cls={pri.cls} />,
-                            ];
-                          })}
-                        />
-                        <div style={{ marginTop: 14, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '10px 14px', display: 'flex', gap: 10, fontSize: 12, color: '#92400e', fontFamily: 'Arial, sans-serif' }}>
-                          <span style={{ flexShrink: 0 }}>⚠</span>
-                          <span>These districts should be prioritised for new facility allocation, mobile outreach, or telehealth expansion.</span>
                         </div>
                       </section>
                     )}
