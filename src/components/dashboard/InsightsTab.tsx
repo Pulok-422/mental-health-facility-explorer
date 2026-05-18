@@ -406,15 +406,12 @@ export default function InsightsTab({ districts, facilities }: InsightsProps) {
         <div className="dashboard-panel rounded-xl border border-border bg-card p-3 md:p-4">
           <div className="mb-3">
             <h3 className="text-sm font-semibold text-foreground">Population vs. Coverage</h3>
-            <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
-              Each dot is a district.
-            </p>
           </div>
 
           <div className="mb-3 flex flex-wrap gap-2">
             <div className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold" style={{ backgroundColor: C.gapBg, borderColor: C.gapBorder, color: C.gap }}>
               <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: C.gap }} />
-              High population &middot; Low coverage &mdash; priority ({facilityVsNeed.gapCount} districts)
+              High population &middot; Low coverage
             </div>
             <div className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold" style={{ backgroundColor: C.blue50, borderColor: C.blue200, color: C.blue700 }}>
               <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: C.blue400 }} />
