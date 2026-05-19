@@ -1,6 +1,5 @@
 import type { Filters } from '@/types/dashboard';
 import { X, Filter } from 'lucide-react';
-import { useMemo } from 'react';
 
 interface Props {
   filters: Filters;
@@ -26,13 +25,13 @@ type ArrayFilterKey =
   | 'appointmentRequired'
   | 'cost';
 
-const FILTER_LABELS: Array<[ArrayFilterKey, string]> = [
-  ['facilityTypes', 'Type'],
-  ['ownership', 'Ownership'],
-  ['origin', 'Origin'],
-  ['category', 'Category'],
-  ['appointmentRequired', 'Appointment'],
-  ['cost', 'Cost'],
+const ARRAY_FILTERS: Array<{ key: ArrayFilterKey; prefix: string }> = [
+  { key: 'facilityTypes', prefix: 'Type' },
+  { key: 'ownership', prefix: 'Ownership' },
+  { key: 'origin', prefix: 'Origin' },
+  { key: 'category', prefix: 'Category' },
+  { key: 'appointmentRequired', prefix: 'Appointment' },
+  { key: 'cost', prefix: 'Cost' },
 ];
 
 export default function ActiveFilterChips({
@@ -44,61 +43,51 @@ export default function ActiveFilterChips({
   resetFilters,
   resultCount,
 }: Props) {
-  const chips = useMemo<Chip[]>((() => {
-    const items: Chip[] = [];
+  const chips: Chip[] = [];
 
-    if (selectedDistrict) {
-      items.push({
-        id: 'selected-district',
-        label: `Map: ${districtNameLookup[selectedDistrict] || selectedDistrict}`,
-        onRemove: () => setSelectedDistrict(null),
-      });
-    }
+  if (selectedDistrict) {
+    chips.push({
+      id: 'selected-district',
+      label: `Map: ${districtNameLookup[selectedDistrict] || selectedDistrict}`,
+      onRemove: () => setSelectedDistrict(null),
+    });
+  }
 
-    filters.districts.forEach((code) => {
-      items.push({
-        id: `district-${code}`,
-        label: districtNameLookup[code] || code,
+  filters.districts.forEach((code) => {
+    chips.push({
+      id: `district-${code}`,
+      label: districtNameLookup[code] || code,
+      onRemove: () =>
+        updateFilter(
+          'districts',
+          filters.districts.filter((c) => c !== code)
+        ),
+    });
+  });
+
+  ARRAY_FILTERS.forEach(({ key, prefix }) => {
+    const values = filters[key] as string[];
+
+    values.forEach((value) => {
+      chips.push({
+        id: `${key}-${value}`,
+        label: `${prefix}: ${value}`,
         onRemove: () =>
           updateFilter(
-            'districts',
-            filters.districts.filter((c) => c !== code)
+            key,
+            values.filter((v) => v !== value) as Filters[typeof key]
           ),
       });
     });
+  });
 
-    FILTER_LABELS.forEach(([key, prefix]) => {
-      const values = filters[key] as string[];
-
-      values.forEach((value) => {
-        items.push({
-          id: `${key}-${value}`,
-          label: `${prefix}: ${value}`,
-          onRemove: () =>
-            updateFilter(
-              key,
-              values.filter((v) => v !== value) as Filters[typeof key]
-            ),
-        });
-      });
+  if (filters.searchQuery) {
+    chips.push({
+      id: 'search-query',
+      label: `Search: ${filters.searchQuery}`,
+      onRemove: () => updateFilter('searchQuery', ''),
     });
-
-    if (filters.searchQuery) {
-      items.push({
-        id: 'search-query',
-        label: `Search: ${filters.searchQuery}`,
-        onRemove: () => updateFilter('searchQuery', ''),
-      });
-    }
-
-    return items;
-  }, [
-    filters,
-    selectedDistrict,
-    districtNameLookup,
-    updateFilter,
-    setSelectedDistrict,
-  ]);
+  }
 
   if (chips.length === 0 && resultCount === undefined) return null;
 
