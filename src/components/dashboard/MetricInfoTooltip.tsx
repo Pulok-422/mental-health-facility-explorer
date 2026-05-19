@@ -27,17 +27,27 @@ interface Props {
 
 export default function MetricInfoTooltip({ text, label }: Props) {
   const content = text ?? (label ? METRIC_TOOLTIPS[label] : undefined);
+
   if (!content) return null;
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="inline-flex" aria-label={`About ${label ?? 'metric'}`}>
-          <Info className="h-3 w-3 cursor-pointer text-muted-foreground" />
-        </span>
+        <button
+          type="button"
+          aria-label={`About ${label ?? 'metric'}`}
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <Info className="h-3.5 w-3.5" />
+        </button>
       </TooltipTrigger>
+
       <TooltipContent
         side="top"
-        className="bg-gray-900 text-white text-[11px] leading-relaxed rounded-lg p-2 max-w-[220px] shadow-lg z-[9999] border-0"
+        align="center"
+        sideOffset={6}
+        className="max-w-[240px] rounded-lg border-0 bg-gray-900 p-2 text-[11px] leading-relaxed text-white shadow-lg"
       >
         {content}
       </TooltipContent>
