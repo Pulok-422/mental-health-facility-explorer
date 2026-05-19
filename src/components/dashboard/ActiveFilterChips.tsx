@@ -1,5 +1,6 @@
 import type { Filters } from '@/types/dashboard';
 import { X, Filter } from 'lucide-react';
+import { useMemo } from 'react';
 
 interface Props {
   filters: Filters;
@@ -17,6 +18,23 @@ interface Chip {
   onRemove: () => void;
 }
 
+type ArrayFilterKey =
+  | 'facilityTypes'
+  | 'ownership'
+  | 'origin'
+  | 'category'
+  | 'appointmentRequired'
+  | 'cost';
+
+const FILTER_LABELS: Array<[ArrayFilterKey, string]> = [
+  ['facilityTypes', 'Type'],
+  ['ownership', 'Ownership'],
+  ['origin', 'Origin'],
+  ['category', 'Category'],
+  ['appointmentRequired', 'Appointment'],
+  ['cost', 'Cost'],
+];
+
 export default function ActiveFilterChips({
   filters,
   selectedDistrict,
@@ -26,89 +44,125 @@ export default function ActiveFilterChips({
   resetFilters,
   resultCount,
 }: Props) {
-  const chips: Chip[] = [];
+  const chips = useMemo<Chip[]>((() => {
+    const items: Chip[] = [];
 
-  if (selectedDistrict) {
-    chips.push({
-      id: 'sel',
-      label: `Map: ${districtNameLookup[selectedDistrict] || selectedDistrict}`,
-      onRemove: () => setSelectedDistrict(null),
-    });
-  }
+    if (selectedDistrict) {
+      items.push({
+        id: 'selected-district',
+        label: `Map: ${districtNameLookup[selectedDistrict] || selectedDistrict}`,
+        onRemove: () => setSelectedDistrict(null),
+      });
+    }
 
-  filters.districts.forEach((code) => {
-    chips.push({
-      id: `d-${code}`,
-      label: districtNameLookup[code] || code,
-      onRemove: () => updateFilter('districts', filters.districts.filter((c) => c !== code)),
-    });
-  });
-
-  const arrayFilters: Array<[keyof Filters, string]> = [
-    ['facilityTypes', 'Type'],
-    ['ownership', 'Ownership'],
-    ['origin', 'Origin'],
-    ['category', 'Category'],
-    ['appointmentRequired', 'Appt'],
-    ['cost', 'Cost'],
-  ];
-
-  arrayFilters.forEach(([key, prefix]) => {
-    const arr = filters[key] as string[];
-    arr.forEach((val) => {
-      chips.push({
-        id: `${String(key)}-${val}`,
-        label: `${prefix}: ${val}`,
-        onRemove: () => updateFilter(key, arr.filter((v) => v !== val) as any),
+    filters.districts.forEach((code) => {
+      items.push({
+        id: `district-${code}`,
+        label: districtNameLookup[code] || code,
+        onRemove: () =>
+          updateFilter(
+            'districts',
+            filters.districts.filter((c) => c !== code)
+          ),
       });
     });
-  });
 
-  if (filters.searchQuery) {
-    chips.push({
-      id: 'q',
-      label: `"${filters.searchQuery}"`,
-      onRemove: () => updateFilter('searchQuery', ''),
+    FILTER_LABELS.forEach(([key, prefix]) => {
+      const values = filters[key] as string[];
+
+      values.forEach((value) => {
+        items.push({
+          id: `${key}-${value}`,
+          label: `${prefix}: ${value}`,
+          onRemove: () =>
+            updateFilter(
+              key,
+              values.filter((v) => v !== value) as Filters[typeof key]
+            ),
+        });
+      });
     });
-  }
+
+    if (filters.searchQuery) {
+      items.push({
+        id: 'search-query',
+        label: `Search: ${filters.searchQuery}`,
+        onRemove: () => updateFilter('searchQuery', ''),
+      });
+    }
+
+    return items;
+  }, [
+    filters,
+    selectedDistrict,
+    districtNameLookup,
+    updateFilter,
+    setSelectedDistrict,
+  ]);
 
   if (chips.length === 0 && resultCount === undefined) return null;
 
   return (
-    <div className="flex items-center flex-wrap gap-1.5 px-3 py-2 rounded-lg bg-muted/40 border border-border">
-      <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+    <div className="rounded-xl border border-border bg-card/70 px-3 py-3 shadow-sm">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10">
+            <Filter className="h-3.5 w-3.5 text-primary" />
+          </span>
+
+          <div className="min-w-0">
+            <div className="text-xs font-semibold text-foreground">
+              Active Filters
+            </div>
+
+            <div className="text-[11px] text-muted-foreground">
+              {chips.length > 0
+                ? `${chips.length} filter${chips.length > 1 ? 's' : ''} applied`
+                : 'No filters applied'}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1.5">
+          {resultCount !== undefined && (
+            <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
+              {resultCount.toLocaleString()} results
+            </span>
+          )}
+
+          {chips.length > 0 && (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              Clear all
+            </button>
+          )}
+        </div>
+      </div>
+
       {chips.length > 0 && (
-        <span className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mr-1">
-          Active ({chips.length})
-        </span>
-      )}
-      {chips.slice(0, 12).map((c) => (
-        <button
-          key={c.id}
-          type="button"
-          onClick={c.onRemove}
-          className="inline-flex items-center gap-1 px-[9px] py-[4px] rounded-[20px] text-[11px] bg-card border border-border text-foreground hover:bg-secondary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          <span className="max-w-[140px] truncate">{c.label}</span>
-          <X className="h-3 w-3 text-muted-foreground" />
-        </button>
-      ))}
-      {chips.length > 12 && (
-        <span className="text-[11px] text-muted-foreground">+{chips.length - 12} more</span>
-      )}
-      {resultCount !== undefined && (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-[20px] text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20">
-          {resultCount.toLocaleString()} results
-        </span>
-      )}
-      {chips.length > 0 && (
-        <button
-          type="button"
-          onClick={resetFilters}
-          className="ml-auto text-[11px] font-semibold text-primary hover:underline focus:outline-none"
-        >
-          Clear all
-        </button>
+        <div className="mt-3 max-h-[116px] overflow-y-auto pr-1">
+          <div className="flex flex-wrap gap-1.5">
+            {chips.map((chip) => (
+              <button
+                key={chip.id}
+                type="button"
+                title={`Remove ${chip.label}`}
+                aria-label={`Remove filter ${chip.label}`}
+                onClick={chip.onRemove}
+                className="group inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-[11px] text-foreground shadow-sm transition-colors hover:border-primary/30 hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <span className="max-w-[155px] truncate">{chip.label}</span>
+
+                <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
+                  <X className="h-3 w-3" />
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
